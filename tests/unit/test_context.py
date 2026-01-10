@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from foundry_eval.context.metadata_extractor import MetadataExtractor
-from foundry_eval.context.toc_parser import TOCParser, TOCEntry
-from foundry_eval.context.include_resolver import IncludeResolver
-from foundry_eval.models.enums import ContentPattern
+from doc_agent.context.metadata_extractor import MetadataExtractor
+from doc_agent.context.toc_parser import TOCParser, TOCEntry
+from doc_agent.context.include_resolver import IncludeResolver
+from doc_agent.models.enums import ContentPattern
 
 
 class TestMetadataExtractor:

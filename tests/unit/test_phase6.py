@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from foundry_eval.models.code_sample import (
+from doc_agent.models.code_sample import (
     CodeSample,
     SampleLanguage,
     SampleReference,
@@ -13,7 +13,7 @@ from foundry_eval.models.code_sample import (
     SampleStatus,
     SampleValidationResult,
 )
-from foundry_eval.models.jtbd import (
+from doc_agent.models.jtbd import (
     CoverageGap,
     JTBD,
     JTBDAnalysisResult,
@@ -258,7 +258,7 @@ class TestJTBDLoader:
     @pytest.mark.asyncio
     async def test_load_json(self, sample_jtbd_json):
         """Test loading JTBD from JSON."""
-        from foundry_eval.context.jtbd_loader import JTBDLoader
+        from doc_agent.context.jtbd_loader import JTBDLoader
 
         loader = JTBDLoader(sample_jtbd_json)
         jtbds = await loader.load_all()
@@ -270,7 +270,7 @@ class TestJTBDLoader:
     @pytest.mark.asyncio
     async def test_load_by_id(self, sample_jtbd_json):
         """Test loading specific JTBD by ID."""
-        from foundry_eval.context.jtbd_loader import JTBDLoader
+        from doc_agent.context.jtbd_loader import JTBDLoader
 
         loader = JTBDLoader(sample_jtbd_json)
         jtbd = await loader.load_by_id("jtbd-001")
@@ -281,7 +281,7 @@ class TestJTBDLoader:
     @pytest.mark.asyncio
     async def test_load_nonexistent_id(self, sample_jtbd_json):
         """Test loading nonexistent JTBD ID."""
-        from foundry_eval.context.jtbd_loader import JTBDLoader
+        from doc_agent.context.jtbd_loader import JTBDLoader
 
         loader = JTBDLoader(sample_jtbd_json)
         jtbd = await loader.load_by_id("nonexistent")
@@ -303,7 +303,7 @@ class TestJTBDLoader:
     @pytest.mark.asyncio
     async def test_load_golden_path_csv(self, sample_golden_path_csv):
         """Test loading JTBD from Golden Path CSV format."""
-        from foundry_eval.context.jtbd_loader import JTBDLoader
+        from doc_agent.context.jtbd_loader import JTBDLoader
 
         loader = JTBDLoader(sample_golden_path_csv)
         jtbds = await loader.load_all()
@@ -334,8 +334,8 @@ class TestJTBDLoader:
     @pytest.mark.asyncio
     async def test_stepless_jtbd_coverage(self, sample_golden_path_csv):
         """Test coverage properties for step-less JTBDs."""
-        from foundry_eval.context.jtbd_loader import JTBDLoader
-        from foundry_eval.models.jtbd import JTBDCoverageStatus
+        from doc_agent.context.jtbd_loader import JTBDLoader
+        from doc_agent.models.jtbd import JTBDCoverageStatus
 
         loader = JTBDLoader(sample_golden_path_csv)
         jtbds = await loader.load_all()
@@ -370,7 +370,7 @@ class TestSamplesIndex:
     @pytest.mark.asyncio
     async def test_index_samples(self, sample_repo):
         """Test indexing samples."""
-        from foundry_eval.context.samples_index import SamplesIndex
+        from doc_agent.context.samples_index import SamplesIndex
 
         index = SamplesIndex(sample_repo)
         count = await index.index()
@@ -381,7 +381,7 @@ class TestSamplesIndex:
     @pytest.mark.asyncio
     async def test_get_sample(self, sample_repo):
         """Test getting a sample by ID."""
-        from foundry_eval.context.samples_index import SamplesIndex
+        from doc_agent.context.samples_index import SamplesIndex
 
         index = SamplesIndex(sample_repo)
         await index.index()
@@ -394,7 +394,7 @@ class TestSamplesIndex:
     @pytest.mark.asyncio
     async def test_orphaned_samples(self, sample_repo):
         """Test getting orphaned samples."""
-        from foundry_eval.context.samples_index import SamplesIndex
+        from doc_agent.context.samples_index import SamplesIndex
 
         index = SamplesIndex(sample_repo)
         await index.index()
@@ -407,7 +407,7 @@ class TestSamplesIndex:
     @pytest.mark.asyncio
     async def test_samples_by_language(self, sample_repo):
         """Test getting samples by language."""
-        from foundry_eval.context.samples_index import SamplesIndex
+        from doc_agent.context.samples_index import SamplesIndex
 
         index = SamplesIndex(sample_repo)
         await index.index()

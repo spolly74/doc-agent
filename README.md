@@ -1,6 +1,6 @@
-# Foundry Content Evaluation System
+# Doc Agent
 
-An agentic content evaluation system for Microsoft Foundry technical documentation. Evaluates articles against a developer-focused rubric, performs JTBD (Job-To-Be-Done) coverage analysis, validates code samples, and produces actionable reports.
+An agentic content evaluation system for technical documentation. Evaluates articles against a developer-focused rubric, performs JTBD (Job-To-Be-Done) coverage analysis, validates code samples, and produces actionable reports.
 
 ## Features
 
@@ -15,21 +15,18 @@ An agentic content evaluation system for Microsoft Foundry technical documentati
 
 ```bash
 # Clone the repository
-git clone https://github.com/microsoft/foundry-eval.git
-cd foundry-eval
+git clone https://github.com/spolly74/doc-agent.git
+cd doc-agent
 
 # Install in development mode
 pip install -e ".[dev]"
-
-# Or install from PyPI (when published)
-pip install foundry-eval
 ```
 
 ## Configuration
 
 1. Copy the example configuration:
    ```bash
-   cp foundry-eval.config.json.example foundry-eval.config.json
+   cp doc-agent.config.json.example doc-agent.config.json
    ```
 
 2. Set your Anthropic API key:
@@ -44,7 +41,7 @@ pip install foundry-eval
 Evaluate all articles in a documentation directory:
 
 ```bash
-foundry-eval full --target ./docs --output ./results
+doc-agent full --target ./docs --output ./results
 ```
 
 ### Tiered Evaluation
@@ -52,7 +49,7 @@ foundry-eval full --target ./docs --output ./results
 Quick scan all articles, then deep-evaluate only those below threshold:
 
 ```bash
-foundry-eval tiered --target ./docs --threshold 3.5 --output ./results
+doc-agent tiered --target ./docs --threshold 3.5 --output ./results
 ```
 
 ### JTBD-Scoped Evaluation
@@ -60,15 +57,20 @@ foundry-eval tiered --target ./docs --threshold 3.5 --output ./results
 Evaluate coverage for a specific job-to-be-done:
 
 ```bash
-foundry-eval jtbd --jtbd-file ./jtbd.csv --jtbd-id jtbd-001 --output ./results
+doc-agent jtbd --jtbd-file ./jtbd.csv --jtbd-id jtbd-001 --output ./results
 ```
+
+The JTBD command supports two CSV formats:
+
+1. **Step-based format** - Detailed JTBD definitions with explicit steps
+2. **Golden Path format** - Project tracking with JTBD titles (auto-detected)
 
 ### Code Sample Validation
 
 Validate code samples and check references:
 
 ```bash
-foundry-eval samples --articles-repo ./docs --samples-repo ./samples --output ./results
+doc-agent samples --articles-repo ./docs --samples-repo ./samples --output ./results
 ```
 
 ## Evaluation Dimensions

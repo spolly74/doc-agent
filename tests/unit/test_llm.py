@@ -6,22 +6,22 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from foundry_eval.config.models import LLMConfig, LLMProviderType
-from foundry_eval.context.metadata_extractor import MetadataExtractor
-from foundry_eval.llm.claude import ClaudeProvider
-from foundry_eval.llm.factory import create_llm_provider, get_available_providers
-from foundry_eval.llm.protocol import LLMMessage, LLMProvider, LLMResponse, LLMUsage
-from foundry_eval.llm.prompts.article_eval import (
+from doc_agent.config.models import LLMConfig, LLMProviderType
+from doc_agent.context.metadata_extractor import MetadataExtractor
+from doc_agent.llm.claude import ClaudeProvider
+from doc_agent.llm.factory import create_llm_provider, get_available_providers
+from doc_agent.llm.protocol import LLMMessage, LLMProvider, LLMResponse, LLMUsage
+from doc_agent.llm.prompts.article_eval import (
     build_article_evaluation_prompt,
     build_quick_scan_prompt,
     ARTICLE_EVALUATION_SYSTEM_PROMPT,
 )
-from foundry_eval.llm.response_parser import (
+from doc_agent.llm.response_parser import (
     extract_json_from_response,
     parse_evaluation_response,
     parse_quick_scan_response,
 )
-from foundry_eval.models.enums import Dimension, Severity
+from doc_agent.models.enums import Dimension, Severity
 
 
 class TestLLMMessage:

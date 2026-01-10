@@ -6,13 +6,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from foundry_eval.context.metadata_extractor import MetadataExtractor
-from foundry_eval.evaluators.article import ArticleEvaluator, TieredArticleEvaluator
-from foundry_eval.evaluators.base import BaseEvaluator
-from foundry_eval.llm.protocol import LLMMessage, LLMResponse, LLMUsage
-from foundry_eval.models.article import Article
-from foundry_eval.models.enums import Dimension, Severity
-from foundry_eval.models.evaluation import EvaluationResult
+from doc_agent.context.metadata_extractor import MetadataExtractor
+from doc_agent.evaluators.article import ArticleEvaluator, TieredArticleEvaluator
+from doc_agent.evaluators.base import BaseEvaluator
+from doc_agent.llm.protocol import LLMMessage, LLMResponse, LLMUsage
+from doc_agent.models.article import Article
+from doc_agent.models.enums import Dimension, Severity
+from doc_agent.models.evaluation import EvaluationResult
 
 
 class TestBaseEvaluator:

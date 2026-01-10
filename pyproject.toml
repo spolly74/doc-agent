@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "foundry-eval"
+name = "doc-agent"
 version = "0.1.0"
-description = "Agentic content evaluation system for Microsoft Foundry documentation"
+description = "Agentic content evaluation system for technical documentation"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -15,10 +15,10 @@ authors = [
 keywords = [
     "documentation",
     "evaluation",
-    "microsoft",
-    "foundry",
     "llm",
     "claude",
+    "jtbd",
+    "content-quality",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -74,16 +74,16 @@ dev = [
 ]
 
 [project.scripts]
-foundry-eval = "foundry_eval.cli.main:app"
+doc-agent = "doc_agent.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/microsoft/foundry-eval"
-Documentation = "https://github.com/microsoft/foundry-eval#readme"
-Repository = "https://github.com/microsoft/foundry-eval"
-Issues = "https://github.com/microsoft/foundry-eval/issues"
+Homepage = "https://github.com/spolly74/doc-agent"
+Documentation = "https://github.com/spolly74/doc-agent#readme"
+Repository = "https://github.com/spolly74/doc-agent"
+Issues = "https://github.com/spolly74/doc-agent/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/foundry_eval"]
+packages = ["src/doc_agent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -119,4 +119,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["foundry_eval"]
+known-first-party = ["doc_agent"]

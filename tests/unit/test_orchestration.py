@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from foundry_eval.models.enums import Dimension
-from foundry_eval.models.evaluation import DimensionScore, EvaluationResult
-from foundry_eval.orchestration.progress import ProgressTracker
-from foundry_eval.orchestration.state import StateManager
+from doc_agent.models.enums import Dimension
+from doc_agent.models.evaluation import DimensionScore, EvaluationResult
+from doc_agent.orchestration.progress import ProgressTracker
+from doc_agent.orchestration.state import StateManager
 
 
 class TestStateManager:

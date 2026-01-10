@@ -7,15 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from foundry_eval.models.enums import Dimension, Severity
-from foundry_eval.models.evaluation import (
+from doc_agent.models.enums import Dimension, Severity
+from doc_agent.models.evaluation import (
     BatchEvaluationResult,
     DimensionScore,
     EvaluationResult,
     Issue,
 )
-from foundry_eval.output.csv_writer import CSVWriter, CSV_COLUMNS
-from foundry_eval.output.markdown_writer import MarkdownWriter, ReportStatistics
+from doc_agent.output.csv_writer import CSVWriter, CSV_COLUMNS
+from doc_agent.output.markdown_writer import MarkdownWriter, ReportStatistics
 
 
 @pytest.fixture
