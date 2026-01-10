@@ -1,10 +1,6 @@
-jtbd_id,title,description,persona,category,priority,step_id,step_number,step_title,step_description
-jtbd-001,Build a Data Pipeline,Create an end-to-end data pipeline using Foundry transforms,Data Engineer,Data Processing,1,step-1,1,Set up development environment,Install the Foundry SDK and configure local development tools
-jtbd-001,Build a Data Pipeline,Create an end-to-end data pipeline using Foundry transforms,Data Engineer,Data Processing,1,step-2,2,Connect to data sources,Configure input datasets and establish connections to source systems
-jtbd-001,Build a Data Pipeline,Create an end-to-end data pipeline using Foundry transforms,Data Engineer,Data Processing,1,step-3,3,Write transform logic,Implement data transformation code using PySpark or SQL
-jtbd-001,Build a Data Pipeline,Create an end-to-end data pipeline using Foundry transforms,Data Engineer,Data Processing,1,step-4,4,Test and validate,Run unit tests and validate output data quality
-jtbd-001,Build a Data Pipeline,Create an end-to-end data pipeline using Foundry transforms,Data Engineer,Data Processing,1,step-5,5,Deploy to production,Schedule the pipeline and monitor execution
-jtbd-002,Implement Access Controls,Set up role-based access control for Foundry resources,Security Admin,Security,2,step-1,1,Understand permission model,Learn Foundry's permission hierarchy and inheritance
-jtbd-002,Implement Access Controls,Set up role-based access control for Foundry resources,Security Admin,Security,2,step-2,2,Define roles and groups,Create organizational groups and assign appropriate roles
-jtbd-002,Implement Access Controls,Set up role-based access control for Foundry resources,Security Admin,Security,2,step-3,3,Apply permissions to resources,Configure access controls on datasets and projects
-jtbd-002,Implement Access Controls,Set up role-based access control for Foundry resources,Security Admin,Security,2,step-4,4,Audit and verify,Review access logs and validate permission configuration
+JTBD #,Title,URL,Phase,Area,Assignees,JTBD Status,Target Grade,Review status,Target
+1,Create resource group for developer sandbox,https://github.com/example/project/issues/1,Idea to Proto,Provision,,Writing in Progress,B,,
+2,Set up data pipeline with transforms,https://github.com/example/project/issues/2,Build to Deploy,Data & Pipeline,,Published,A,,
+3,Configure role-based access control,https://github.com/example/project/issues/3,Build to Deploy,Security,,Writing in Progress,B,,
+4,Build ontology from raw data,https://github.com/example/project/issues/4,Idea to Proto,Ontology,,Not Started,C,,
+5,Deploy application to production,https://github.com/example/project/issues/5,Build to Deploy,Application,,Published,A,,

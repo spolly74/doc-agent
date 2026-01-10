@@ -159,6 +159,170 @@ Focus on gaps that would have the highest impact on developer success.
 """
 
 
+def build_jtbd_title_mapping_prompt(jtbd: dict, articles: list[dict]) -> str:
+    """Build a prompt for mapping articles to a step-less JTBD by title.
+
+    This is used for JTBDs that don't have defined steps, such as those
+    from project tracking systems (Golden Path format).
+
+    Args:
+        jtbd: JTBD definition (without steps).
+        articles: List of article summaries (path, title, content snippet).
+
+    Returns:
+        Formatted prompt string.
+    """
+    # Build metadata section
+    metadata = []
+    if jtbd.get("persona"):
+        metadata.append(f"**Persona:** {jtbd['persona']}")
+    if jtbd.get("phase"):
+        metadata.append(f"**Phase:** {jtbd['phase']}")
+    if jtbd.get("area"):
+        metadata.append(f"**Area:** {jtbd['area']}")
+    if jtbd.get("category"):
+        metadata.append(f"**Category:** {jtbd['category']}")
+
+    metadata_section = "\n".join(metadata) if metadata else "No additional metadata"
+
+    # Format articles
+    articles_section = "## Available Documentation Articles:\n\n"
+    for i, article in enumerate(articles, 1):
+        articles_section += f"""### Article {i}: {article.get('title', 'Untitled')}
+- Path: {article['path']}
+- Content Preview: {article.get('content', '')[:500]}...
+
+"""
+
+    return f"""## Job-To-Be-Done: {jtbd['title']}
+
+**ID:** {jtbd['jtbd_id']}
+**Description:** {jtbd.get('description', jtbd['title'])}
+
+{metadata_section}
+
+{articles_section}
+
+## Your Task
+
+This JTBD does not have predefined steps. Analyze the JTBD title and description to find articles that would help a developer accomplish this job.
+
+Consider:
+1. Which articles directly address the task described in the title?
+2. Which articles provide supporting information or prerequisites?
+3. Which articles cover related concepts that would be helpful?
+
+Respond with a JSON object:
+
+```json
+{{
+    "mapped_articles": [
+        {{
+            "article_path": "path/to/article.md",
+            "article_title": "Article Title",
+            "relevance_score": 0.85,
+            "covers_fully": false,
+            "covered_aspects": ["Setting up the environment", "Basic configuration"],
+            "missing_aspects": ["Advanced scenarios", "Troubleshooting"],
+            "notes": "Brief explanation of how this article helps with the JTBD"
+        }}
+    ],
+    "coverage_status": "fully_covered|partially_covered|not_covered",
+    "coverage_score": 0.65,
+    "coverage_notes": "Overall assessment of how well documentation covers this JTBD",
+    "suggested_reading_order": ["path/to/first.md", "path/to/second.md"],
+    "key_topics_found": ["topic 1", "topic 2"],
+    "key_topics_missing": ["missing topic 1", "missing topic 2"]
+}}
+```
+
+Include all articles with relevance_score > 0.3 in the mapped_articles list. Order by relevance score descending.
+"""
+
+
+def build_stepless_gap_analysis_prompt(jtbd: dict, mapping_result: dict) -> str:
+    """Build a prompt for analyzing coverage gaps in a step-less JTBD.
+
+    Args:
+        jtbd: JTBD definition (without steps).
+        mapping_result: Result from title-level mapping.
+
+    Returns:
+        Formatted prompt string.
+    """
+    # Format mapped articles
+    mapped_articles = mapping_result.get("mapped_articles", [])
+    articles_section = ""
+    if mapped_articles:
+        articles_section = "### Mapped Articles:\n"
+        for article in mapped_articles:
+            articles_section += f"""
+- **{article.get('article_title', article.get('article_path', 'Unknown'))}**
+  - Relevance: {article.get('relevance_score', 0):.0%}
+  - Covers: {', '.join(article.get('covered_aspects', ['N/A']))}
+  - Missing: {', '.join(article.get('missing_aspects', ['N/A']))}
+"""
+    else:
+        articles_section = "### No articles mapped to this JTBD.\n"
+
+    return f"""## Job-To-Be-Done: {jtbd['title']}
+
+**ID:** {jtbd['jtbd_id']}
+**Description:** {jtbd.get('description', jtbd['title'])}
+**Phase:** {jtbd.get('phase', 'N/A')}
+**Area:** {jtbd.get('area', 'N/A')}
+
+### Current Coverage:
+- Status: {mapping_result.get('coverage_status', 'unknown')}
+- Score: {mapping_result.get('coverage_score', 0):.0%}
+- Notes: {mapping_result.get('coverage_notes', 'N/A')}
+
+{articles_section}
+
+### Topics Found: {', '.join(mapping_result.get('key_topics_found', ['None']))}
+### Topics Missing: {', '.join(mapping_result.get('key_topics_missing', ['None']))}
+
+## Your Task
+
+Based on the JTBD title/description and the current documentation coverage, identify gaps that should be addressed. For this step-less JTBD, think about:
+
+1. What information would a developer need to complete this job?
+2. What topics are not covered by existing documentation?
+3. What new articles or content expansions would be most valuable?
+
+Respond with a JSON object:
+
+```json
+{{
+    "gaps": [
+        {{
+            "gap_type": "missing|incomplete|outdated",
+            "severity": "critical|high|medium|low",
+            "title": "Short title for the gap",
+            "description": "Detailed description of what's missing and why it matters",
+            "suggested_article_title": "Proposed title for new content",
+            "suggested_content_outline": [
+                "Introduction and prerequisites",
+                "Step-by-step instructions",
+                "Code examples",
+                "Troubleshooting"
+            ],
+            "related_articles": ["path/to/related.md"],
+            "estimated_effort": "small|medium|large"
+        }}
+    ],
+    "overall_assessment": "Summary of the documentation coverage for this JTBD",
+    "priority_actions": [
+        "Most important action to improve coverage",
+        "Second priority action"
+    ]
+}}
+```
+
+Focus on gaps that would have the highest impact on developer success for this specific job.
+"""
+
+
 def build_article_jtbd_relevance_prompt(article_content: str, jtbd: dict) -> str:
     """Build a prompt to assess how relevant an article is to a JTBD.
 

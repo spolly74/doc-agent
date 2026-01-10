@@ -17,6 +17,8 @@ from foundry_eval.llm.prompts.jtbd_analysis import (
     build_article_jtbd_relevance_prompt,
     build_gap_analysis_prompt,
     build_jtbd_mapping_prompt,
+    build_jtbd_title_mapping_prompt,
+    build_stepless_gap_analysis_prompt,
 )
 
 __all__ = [
@@ -35,4 +37,6 @@ __all__ = [
     "build_article_jtbd_relevance_prompt",
     "build_gap_analysis_prompt",
     "build_jtbd_mapping_prompt",
+    "build_jtbd_title_mapping_prompt",
+    "build_stepless_gap_analysis_prompt",
 ]

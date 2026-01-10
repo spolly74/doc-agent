@@ -288,6 +288,68 @@ class TestJTBDLoader:
 
         assert jtbd is None
 
+    @pytest.fixture
+    def sample_golden_path_csv(self, tmp_path):
+        """Create a sample Golden Path format CSV file."""
+        data = """JTBD #,Title,URL,Phase,Area,Assignees,JTBD Status,Target Grade
+1,Create resource group for developer sandbox,https://github.com/example/1,Idea to Proto,Provision,Alice,Writing in Progress,B
+2,Set up data pipeline with transforms,https://github.com/example/2,Build to Deploy,Data & Pipeline,"Bob, Charlie",Published,A
+3,Configure role-based access control,https://github.com/example/3,Build to Deploy,Security,,Not Started,C
+"""
+        file_path = tmp_path / "golden_path.csv"
+        file_path.write_text(data)
+        return file_path
+
+    @pytest.mark.asyncio
+    async def test_load_golden_path_csv(self, sample_golden_path_csv):
+        """Test loading JTBD from Golden Path CSV format."""
+        from foundry_eval.context.jtbd_loader import JTBDLoader
+
+        loader = JTBDLoader(sample_golden_path_csv)
+        jtbds = await loader.load_all()
+
+        assert len(jtbds) == 3
+
+        # Check first JTBD
+        jtbd1 = jtbds[0]
+        assert jtbd1.jtbd_id == "jtbd-1"
+        assert jtbd1.title == "Create resource group for developer sandbox"
+        assert jtbd1.phase == "Idea to Proto"
+        assert jtbd1.area == "Provision"
+        assert jtbd1.status == "Writing in Progress"
+        assert jtbd1.is_stepless is True
+        assert len(jtbd1.steps) == 0
+
+        # Check persona derivation
+        assert jtbd1.persona == "Platform Admin"  # Derived from "Provision"
+
+        # Check second JTBD with multiple assignees
+        jtbd2 = jtbds[1]
+        assert jtbd2.jtbd_id == "jtbd-2"
+        assert len(jtbd2.assignees) == 2
+        assert "Bob" in jtbd2.assignees
+        assert "Charlie" in jtbd2.assignees
+        assert jtbd2.persona == "Data Engineer"  # Derived from "Data & Pipeline"
+
+    @pytest.mark.asyncio
+    async def test_stepless_jtbd_coverage(self, sample_golden_path_csv):
+        """Test coverage properties for step-less JTBDs."""
+        from foundry_eval.context.jtbd_loader import JTBDLoader
+        from foundry_eval.models.jtbd import JTBDCoverageStatus
+
+        loader = JTBDLoader(sample_golden_path_csv)
+        jtbds = await loader.load_all()
+        jtbd = jtbds[0]
+
+        # Initial state
+        assert jtbd.coverage_percentage == 0.0
+        assert jtbd.coverage_status == JTBDCoverageStatus.NOT_COVERED
+
+        # Update coverage
+        jtbd.coverage_status = JTBDCoverageStatus.PARTIALLY_COVERED
+        jtbd.coverage_score = 0.65
+        assert jtbd.coverage_percentage == 65.0
+
 
 class TestSamplesIndex:
     """Tests for samples index."""

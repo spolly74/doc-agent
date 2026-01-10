@@ -42,7 +42,7 @@ class JTBD(BaseModel):
     category: str = ""
     priority: int = Field(default=0, ge=0, le=10)
 
-    # Steps in the journey
+    # Steps in the journey (optional - may be empty for simple JTBDs)
     steps: list[JTBDStep] = Field(default_factory=list)
 
     # Prerequisites
@@ -50,6 +50,19 @@ class JTBD(BaseModel):
 
     # Tags for categorization
     tags: list[str] = Field(default_factory=list)
+
+    # Additional metadata from Golden Path format
+    url: str = ""  # GitHub issue or documentation URL
+    phase: str = ""  # e.g., "Idea to Proto", "Build to Deploy"
+    area: str = ""  # e.g., "Provision", "Data & Pipeline"
+    status: str = ""  # e.g., "Writing in Progress", "Published"
+    target_grade: str = ""  # Target quality grade
+    assignees: list[str] = Field(default_factory=list)
+
+    # Coverage tracking at JTBD level (for step-less JTBDs)
+    coverage_status: JTBDCoverageStatus = JTBDCoverageStatus.NOT_COVERED
+    mapped_articles: list[str] = Field(default_factory=list)
+    coverage_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @property
     def total_steps(self) -> int:
@@ -70,9 +83,20 @@ class JTBD(BaseModel):
     @property
     def coverage_percentage(self) -> float:
         """Overall coverage percentage."""
+        # For step-less JTBDs, use JTBD-level coverage
         if not self.steps:
+            if self.coverage_status in (
+                JTBDCoverageStatus.FULLY_COVERED,
+                JTBDCoverageStatus.PARTIALLY_COVERED,
+            ):
+                return self.coverage_score * 100
             return 0.0
         return (self.covered_steps / self.total_steps) * 100
+
+    @property
+    def is_stepless(self) -> bool:
+        """Check if this JTBD has no steps defined."""
+        return len(self.steps) == 0
 
 
 class JTBDMapping(BaseModel):
