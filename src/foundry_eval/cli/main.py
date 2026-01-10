@@ -311,12 +311,12 @@ def jtbd(
         ),
     ],
     jtbd_id: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--jtbd-id",
-            help="ID of the specific JTBD to analyze.",
+            help="ID of the specific JTBD to analyze (analyzes all if not specified).",
         ),
-    ],
+    ] = None,
     target: Annotated[
         Optional[Path],
         typer.Option(
@@ -348,6 +348,11 @@ def jtbd(
     Example:
         foundry-eval jtbd --jtbd-file ./jtbd.csv --jtbd-id jtbd-001
     """
+    from foundry_eval.context.jtbd_loader import JTBDLoader
+    from foundry_eval.context.toc_parser import TOCParser
+    from foundry_eval.evaluators.jtbd import JTBDAnalyzer
+    from foundry_eval.llm.factory import create_llm_provider
+
     cfg = load_config(
         config_path=config,
         target=target,
@@ -356,12 +361,86 @@ def jtbd(
         verbose=verbose,
     )
 
+    setup_logging(verbosity=verbose)
+
     console.print(f"[bold green]Starting JTBD-scoped evaluation[/bold green]")
     console.print(f"  JTBD File: {jtbd_file}")
-    console.print(f"  JTBD ID: {jtbd_id}")
+    if jtbd_id:
+        console.print(f"  JTBD ID: {jtbd_id}")
+    else:
+        console.print("  Analyzing all JTBDs in file")
+    console.print(f"  Target: {target or cfg.articles_path or Path('.')}")
+    console.print()
 
-    # TODO: Implement JTBD evaluation
-    console.print("[yellow]JTBD evaluation not yet implemented[/yellow]")
+    async def run_jtbd_analysis():
+        # Create components
+        llm_provider = create_llm_provider(cfg.llm)
+        jtbd_loader = JTBDLoader(jtbd_file)
+        target_path = target or cfg.articles_path or Path(".")
+        toc_parser = TOCParser(target_path)
+
+        analyzer = JTBDAnalyzer(llm_provider)
+
+        if jtbd_id:
+            # Analyze specific JTBD
+            jtbd_obj = await jtbd_loader.load_by_id(jtbd_id)
+            if not jtbd_obj:
+                console.print(f"[red]JTBD not found: {jtbd_id}[/red]")
+                return None
+
+            def on_progress(msg):
+                console.print(f"  {msg}")
+
+            result = await analyzer.analyze_jtbd(jtbd_obj, toc_parser, on_progress)
+            return [result]
+        else:
+            # Analyze all JTBDs
+            def on_progress(completed, total, msg):
+                console.print(f"  [{completed}/{total}] {msg}")
+
+            results = await analyzer.analyze_all_jtbds(jtbd_loader, toc_parser, on_progress)
+            return results
+
+    try:
+        results = asyncio.run(run_jtbd_analysis())
+
+        if results:
+            # Print summary
+            console.print()
+            table = Table(title="JTBD Coverage Summary")
+            table.add_column("JTBD", style="cyan")
+            table.add_column("Coverage", style="green")
+            table.add_column("Gaps", style="yellow")
+            table.add_column("Critical", style="red")
+
+            for result in results:
+                coverage = f"{result.overall_coverage_score * 100:.0f}%"
+                gap_counts = result.gap_count_by_severity
+                table.add_row(
+                    result.jtbd.title[:40],
+                    coverage,
+                    str(len(result.gaps)),
+                    str(gap_counts.get("critical", 0)),
+                )
+
+            console.print(table)
+
+            # Save detailed results
+            output.mkdir(parents=True, exist_ok=True)
+            import json
+            results_file = output / "jtbd-analysis.json"
+            with open(results_file, "w") as f:
+                json.dump([r.model_dump() for r in results], f, indent=2, default=str)
+            console.print(f"\nDetailed results saved to: {results_file}")
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Analysis interrupted by user[/yellow]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"\n[bold red]Error:[/bold red] {e}")
+        if verbose >= 2:
+            console.print_exception()
+        sys.exit(1)
 
 
 @app.command()
@@ -396,6 +475,13 @@ def samples(
             help="Output directory for results.",
         ),
     ] = Path("./eval-output"),
+    validate: Annotated[
+        bool,
+        typer.Option(
+            "--validate/--no-validate",
+            help="Validate code samples with LLM (slower but more thorough).",
+        ),
+    ] = False,
     config: ConfigOption = None,
     verbose: VerboseOption = 1,
 ) -> None:
@@ -408,6 +494,11 @@ def samples(
     Example:
         foundry-eval samples --articles-repo ./docs --samples-repo ./samples
     """
+    from foundry_eval.context.samples_index import SamplesIndex
+    from foundry_eval.context.toc_parser import TOCParser
+    from foundry_eval.evaluators.code_samples import CodeSampleValidator
+    from foundry_eval.llm.factory import create_llm_provider
+
     cfg = load_config(
         config_path=config,
         target=articles_repo,
@@ -416,12 +507,123 @@ def samples(
         verbose=verbose,
     )
 
+    setup_logging(verbosity=verbose)
+
     console.print(f"[bold green]Starting code sample validation[/bold green]")
     console.print(f"  Articles: {articles_repo}")
     console.print(f"  Samples: {samples_repo}")
+    console.print(f"  LLM Validation: {'enabled' if validate else 'disabled'}")
+    console.print()
 
-    # TODO: Implement samples validation
-    console.print("[yellow]Samples validation not yet implemented[/yellow]")
+    async def run_samples_analysis():
+        # Create components
+        samples_index = SamplesIndex(samples_repo, articles_repo)
+        toc_parser = TOCParser(articles_repo)
+
+        # Index samples
+        console.print("Indexing samples repository...")
+        sample_count = await samples_index.index()
+        console.print(f"  Found {sample_count} code samples")
+
+        # Get orphaned samples
+        orphaned = await samples_index.get_orphaned_samples()
+        console.print(f"  Orphaned samples: {len(orphaned)}")
+
+        # Get broken references
+        broken_refs = [r for r in samples_index.references if not r.is_valid]
+        console.print(f"  Broken references: {len(broken_refs)}")
+
+        # If validation requested, run LLM validation
+        report = None
+        if validate:
+            console.print("\nValidating samples with LLM...")
+            llm_provider = create_llm_provider(cfg.llm)
+            validator = CodeSampleValidator(llm_provider)
+
+            def on_progress(completed, total, msg):
+                console.print(f"  [{completed}/{total}] {msg}")
+
+            report = await validator.validate_samples(
+                samples_index, toc_parser, on_progress
+            )
+
+        return samples_index, orphaned, broken_refs, report
+
+    try:
+        samples_index, orphaned, broken_refs, report = asyncio.run(run_samples_analysis())
+
+        # Print summary
+        console.print()
+        table = Table(title="Sample Validation Summary")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+
+        table.add_row("Total Samples", str(len(samples_index.samples)))
+        table.add_row("Orphaned Samples", str(len(orphaned)))
+        table.add_row("Broken References", str(len(broken_refs)))
+
+        if report:
+            table.add_row("Valid Samples", str(report.valid_samples))
+            table.add_row("Invalid Samples", str(report.invalid_samples))
+            table.add_row("Validation Rate", f"{report.validation_pass_rate:.1f}%")
+
+        console.print(table)
+
+        # Show orphaned samples if any
+        if orphaned and verbose >= 1:
+            console.print("\n[yellow]Orphaned Samples (not referenced by any article):[/yellow]")
+            for sample in orphaned[:10]:
+                console.print(f"  - {sample.file_path}")
+            if len(orphaned) > 10:
+                console.print(f"  ... and {len(orphaned) - 10} more")
+
+        # Show broken references if any
+        if broken_refs and verbose >= 1:
+            console.print("\n[red]Broken References:[/red]")
+            for ref in broken_refs[:10]:
+                console.print(f"  - {ref.article_path}: {ref.sample_id}")
+            if len(broken_refs) > 10:
+                console.print(f"  ... and {len(broken_refs) - 10} more")
+
+        # Save detailed results
+        output.mkdir(parents=True, exist_ok=True)
+        import json
+
+        results = {
+            "total_samples": len(samples_index.samples),
+            "orphaned_samples": [s.file_path for s in orphaned],
+            "broken_references": [
+                {"article": r.article_path, "sample": r.sample_id}
+                for r in broken_refs
+            ],
+            "samples_by_language": {},
+        }
+
+        # Count by language
+        for sample in samples_index.samples:
+            lang = sample.language.value
+            results["samples_by_language"][lang] = results["samples_by_language"].get(lang, 0) + 1
+
+        if report:
+            results["validation_report"] = {
+                "valid_samples": report.valid_samples,
+                "invalid_samples": report.invalid_samples,
+                "pass_rate": report.validation_pass_rate,
+            }
+
+        results_file = output / "samples-report.json"
+        with open(results_file, "w") as f:
+            json.dump(results, f, indent=2)
+        console.print(f"\nDetailed results saved to: {results_file}")
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Validation interrupted by user[/yellow]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"\n[bold red]Error:[/bold red] {e}")
+        if verbose >= 2:
+            console.print_exception()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
