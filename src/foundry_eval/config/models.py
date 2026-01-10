@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LLMProviderType(str, Enum):
@@ -101,7 +101,4 @@ class FoundryEvalConfig(BaseModel):
     # State management
     state_db_path: Optional[str] = ".foundry-eval-state.db"
 
-    class Config:
-        """Pydantic model configuration."""
-
-        extra = "ignore"  # Ignore unknown fields in config file
+    model_config = ConfigDict(extra="ignore")  # Ignore unknown fields in config file

@@ -1,0 +1,23 @@
+- name: Overview
+  href: index.md
+- name: Getting started
+  items:
+    - name: Quickstart
+      href: quickstart.md
+    - name: Concepts
+      items:
+        - name: Guardrails overview
+          href: sample_article.md
+        - name: Models overview
+          href: models-overview.md
+- name: How-to guides
+  expanded: true
+  items:
+    - name: Create custom guardrails
+      href: how-to-create-guardrails.md
+    - name: Configure agents
+      href: how-to-configure-agents.md
+- name: Reference
+  items:
+    - name: API reference
+      href: api-reference/index.md

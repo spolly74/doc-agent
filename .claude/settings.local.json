@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git -C /Users/scott/repos/doc-agent log --oneline)",
       "Bash(foundry-eval full:*)",
-      "Bash(foundry-eval:*)"
+      "Bash(foundry-eval:*)",
+      "Bash(python -m pytest tests/unit/test_context.py -v)"
     ]
   }
 }

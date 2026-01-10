@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from foundry_eval.models.enums import ContentPattern
 
@@ -62,10 +62,7 @@ class ArticleMetadata(BaseModel):
         delta = datetime.now() - self.ms_date
         return delta.days
 
-    class Config:
-        """Pydantic model configuration."""
-
-        populate_by_name = True  # Allow both alias and field name
+    model_config = ConfigDict(populate_by_name=True)  # Allow both alias and field name
 
 
 class ArticleStructure(BaseModel):
@@ -132,7 +129,4 @@ class Article(BaseModel):
             return float("inf") if code_lines > 0 else 0.0
         return code_lines / prose_lines
 
-    class Config:
-        """Pydantic model configuration."""
-
-        arbitrary_types_allowed = True  # Allow Path
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # Allow Path
