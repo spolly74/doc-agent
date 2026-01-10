@@ -1,0 +1,48 @@
+{
+  "$schema": "./foundry-eval.schema.json",
+  "llm": {
+    "provider": "claude",
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 4096,
+    "temperature": 0.0,
+    "max_concurrent_requests": 5,
+    "retry_attempts": 3,
+    "retry_delay_seconds": 1.0
+  },
+  "evaluation": {
+    "dimensions": [
+      "pattern_compliance",
+      "dev_focus",
+      "code_quality",
+      "code_completeness",
+      "structure",
+      "accuracy",
+      "jtbd_alignment"
+    ],
+    "weights": {
+      "pattern_compliance": 0.15,
+      "dev_focus": 0.25,
+      "code_quality": 0.20,
+      "code_completeness": 0.15,
+      "structure": 0.10,
+      "accuracy": 0.15
+    },
+    "threshold": 4.0,
+    "quick_scan_threshold": 3.5,
+    "max_age_months": 12,
+    "include_patterns": ["**/*.md"],
+    "exclude_patterns": ["**/includes/**", "**/snippets/**", "**/media/**"]
+  },
+  "output": {
+    "csv_filename": "scores.csv",
+    "report_filename": "report.md",
+    "include_raw_responses": false,
+    "verbosity": 1,
+    "gitignore_output": true
+  },
+  "articles_path": null,
+  "samples_repo_path": null,
+  "jtbd_data_path": null,
+  "output_path": "./eval-output",
+  "state_db_path": ".foundry-eval-state.db"
+}

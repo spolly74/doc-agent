@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/scott/repos/doc-agent log --oneline)",
+      "Bash(foundry-eval full:*)",
+      "Bash(foundry-eval:*)"
+    ]
+  }
+}

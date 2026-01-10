@@ -1,0 +1,122 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "foundry-eval"
+version = "0.1.0"
+description = "Agentic content evaluation system for Microsoft Foundry documentation"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Scott", email = "scott@example.com" },
+]
+keywords = [
+    "documentation",
+    "evaluation",
+    "microsoft",
+    "foundry",
+    "llm",
+    "claude",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
+dependencies = [
+    # CLI
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+
+    # Data validation
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+
+    # LLM
+    "anthropic>=0.18.0",
+
+    # Async
+    "aiofiles>=23.2.0",
+    "aiosqlite>=0.19.0",
+
+    # Retry logic
+    "tenacity>=8.2.0",
+
+    # YAML/Markdown parsing
+    "pyyaml>=6.0.0",
+    "python-frontmatter>=1.0.0",
+
+    # Templating
+    "jinja2>=3.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "respx>=0.20.0",
+    "mypy>=1.7.0",
+    "ruff>=0.1.0",
+    "hypothesis>=6.92.0",
+    "types-aiofiles>=23.2.0",
+    "types-PyYAML>=6.0.0",
+]
+
+[project.scripts]
+foundry-eval = "foundry_eval.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/microsoft/foundry-eval"
+Documentation = "https://github.com/microsoft/foundry-eval#readme"
+Repository = "https://github.com/microsoft/foundry-eval"
+Issues = "https://github.com/microsoft/foundry-eval/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/foundry_eval"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+plugins = ["pydantic.mypy"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["foundry_eval"]
