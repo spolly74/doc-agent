@@ -4,6 +4,7 @@ from typing import Optional
 
 from doc_agent.config.models import LLMConfig, LLMProviderType
 from doc_agent.llm.claude import ClaudeProvider
+from doc_agent.llm.ollama import OllamaProvider
 from doc_agent.llm.protocol import LLMProvider
 
 
@@ -19,7 +20,7 @@ def create_llm_provider(
         config: LLMConfig object with provider settings.
         provider_type: Override provider type (defaults to config or Claude).
         model: Override model name.
-        api_key: Override API key.
+        api_key: Override API key (only used for Claude).
 
     Returns:
         LLMProvider instance.
@@ -42,6 +43,15 @@ def create_llm_provider(
             max_retries=config.retry_attempts,
             retry_delay=config.retry_delay_seconds,
             api_key=api_key,
+        )
+    elif effective_provider == LLMProviderType.OLLAMA:
+        # For Ollama, use a sensible default model if Claude model specified
+        if effective_model.startswith("claude"):
+            effective_model = "llama3.2"  # Default Ollama model
+        return OllamaProvider(
+            model=effective_model,
+            base_url=config.ollama_base_url,
+            timeout=config.ollama_timeout,
         )
     else:
         raise ValueError(f"Unsupported LLM provider: {effective_provider}")

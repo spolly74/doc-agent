@@ -10,7 +10,8 @@
       "Read(//private/tmp/eval-test-output/**)",
       "Bash(find:*)",
       "Bash(pip install:*)",
-      "Bash(doc-agent:*)"
+      "Bash(doc-agent:*)",
+      "Bash(python:*)"
     ]
   }
 }

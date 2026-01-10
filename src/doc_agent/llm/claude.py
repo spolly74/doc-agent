@@ -4,7 +4,7 @@ import json
 import logging
 from typing import AsyncIterator, Optional
 
-from anthropic import AsyncAnthropic, APIConnectionError, RateLimitError, APIStatusError
+from anthropic import AsyncAnthropic, APIConnectionError, RateLimitError
 from pydantic import BaseModel, ValidationError
 from tenacity import (
     retry,
@@ -73,8 +73,8 @@ class ClaudeProvider:
         )
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=60),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=5, max=120),
         retry=retry_if_exception_type((APIConnectionError, RateLimitError)),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )

@@ -11,6 +11,7 @@ class LLMProviderType(str, Enum):
     """Supported LLM providers."""
 
     CLAUDE = "claude"
+    OLLAMA = "ollama"
     # Future providers can be added here
     # OPENAI = "openai"
     # AZURE = "azure"
@@ -26,6 +27,10 @@ class LLMConfig(BaseModel):
     max_concurrent_requests: int = Field(default=5, ge=1, le=50)
     retry_attempts: int = Field(default=3, ge=1, le=10)
     retry_delay_seconds: float = Field(default=1.0, ge=0.1, le=60.0)
+
+    # Ollama-specific settings
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_timeout: float = Field(default=300.0, ge=30.0, le=1800.0)  # 5 min default
 
 
 class ScoringWeights(BaseModel):

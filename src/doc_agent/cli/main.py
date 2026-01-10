@@ -1,6 +1,7 @@
 """Main CLI entry point for doc-agent."""
 
 import asyncio
+import os
 import sys
 from pathlib import Path
 from typing import Annotated, Optional
@@ -13,6 +14,29 @@ from doc_agent import __version__
 from doc_agent.config import load_config
 from doc_agent.orchestration.runner import EvaluationRunner
 from doc_agent.utils.logging import setup_logging
+
+
+def _load_dotenv() -> None:
+    """Load .env file if it exists."""
+    # Look for .env in current directory and parent directories
+    current = Path.cwd()
+    for path in [current, *current.parents]:
+        env_file = path / ".env"
+        if env_file.exists():
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, _, value = line.partition("=")
+                        key = key.strip()
+                        value = value.strip().strip("\"'")
+                        if key and key not in os.environ:
+                            os.environ[key] = value
+            break
+
+
+# Load .env file before anything else
+_load_dotenv()
 
 # Create the main Typer app
 app = typer.Typer(
@@ -138,6 +162,14 @@ def full(
     ] = Path("./eval-output"),
     config: ConfigOption = None,
     verbose: VerboseOption = 1,
+    provider: Annotated[
+        Optional[str],
+        typer.Option(
+            "--provider",
+            "-p",
+            help="LLM provider to use (claude, ollama).",
+        ),
+    ] = None,
     model: Annotated[
         Optional[str],
         typer.Option(
@@ -169,8 +201,9 @@ def full(
     Evaluates every article against the complete 7-dimension rubric,
     checks code sample quality, and produces comprehensive reports.
 
-    Example:
-        foundry-eval full --target ./docs --output ./results
+    Examples:
+        doc-agent full --target ./docs --output ./results
+        doc-agent full --target ./docs --provider ollama --model llama3.2
     """
     cfg = load_config(
         config_path=config,
@@ -179,6 +212,7 @@ def full(
         verbose=verbose,
         model=model,
         concurrency=concurrency,
+        provider=provider,
     )
 
     # Set up logging based on verbosity
@@ -187,6 +221,7 @@ def full(
     console.print(f"[bold green]Starting full evaluation[/bold green]")
     console.print(f"  Target: {target}")
     console.print(f"  Output: {output}")
+    console.print(f"  Provider: {cfg.llm.provider.value}")
     console.print(f"  Model: {cfg.llm.model}")
     console.print()
 
@@ -236,6 +271,31 @@ def tiered(
     ] = 4.0,
     config: ConfigOption = None,
     verbose: VerboseOption = 1,
+    provider: Annotated[
+        Optional[str],
+        typer.Option(
+            "--provider",
+            "-p",
+            help="LLM provider to use (claude, ollama).",
+        ),
+    ] = None,
+    model: Annotated[
+        Optional[str],
+        typer.Option(
+            "--model",
+            "-m",
+            help="LLM model to use for evaluation.",
+        ),
+    ] = None,
+    concurrency: Annotated[
+        Optional[int],
+        typer.Option(
+            "--concurrency",
+            help="Maximum concurrent LLM requests.",
+            min=1,
+            max=50,
+        ),
+    ] = None,
     force: Annotated[
         bool,
         typer.Option(
@@ -252,7 +312,7 @@ def tiered(
     or have critical issues.
 
     Example:
-        foundry-eval tiered --target ./docs --threshold 3.5
+        doc-agent tiered --target ./docs --threshold 3.5
     """
     cfg = load_config(
         config_path=config,
@@ -260,6 +320,9 @@ def tiered(
         output=output,
         threshold=threshold,
         verbose=verbose,
+        provider=provider,
+        model=model,
+        concurrency=concurrency,
     )
 
     # Set up logging based on verbosity
@@ -269,6 +332,8 @@ def tiered(
     console.print(f"  Target: {target}")
     console.print(f"  Threshold: {threshold}")
     console.print(f"  Output: {output}")
+    console.print(f"  Provider: {cfg.llm.provider.value}")
+    console.print(f"  Model: {cfg.llm.model}")
     console.print()
 
     try:

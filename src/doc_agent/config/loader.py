@@ -54,6 +54,7 @@ def merge_cli_overrides(
     verbose: Optional[int] = None,
     model: Optional[str] = None,
     concurrency: Optional[int] = None,
+    provider: Optional[str] = None,
 ) -> DocAgentConfig:
     """Merge CLI overrides into the configuration.
 
@@ -69,6 +70,7 @@ def merge_cli_overrides(
         verbose: Verbosity level override.
         model: LLM model override.
         concurrency: Max concurrent requests override.
+        provider: LLM provider override (claude, ollama).
 
     Returns:
         Configuration with CLI overrides applied.
@@ -95,6 +97,8 @@ def merge_cli_overrides(
         data["output"]["verbosity"] = verbose
 
     # Apply LLM overrides
+    if provider is not None:
+        data["llm"]["provider"] = provider
     if model is not None:
         data["llm"]["model"] = model
     if concurrency is not None:
