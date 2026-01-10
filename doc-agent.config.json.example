@@ -1,5 +1,5 @@
 {
-  "$schema": "./foundry-eval.schema.json",
+  "$schema": "./doc-agent.schema.json",
   "llm": {
     "provider": "claude",
     "model": "claude-sonnet-4-20250514",
@@ -44,5 +44,5 @@
   "samples_repo_path": null,
   "jtbd_data_path": null,
   "output_path": "./eval-output",
-  "state_db_path": ".foundry-eval-state.db"
+  "state_db_path": ".doc-agent-state.db"
 }

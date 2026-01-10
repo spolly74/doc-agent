@@ -1,4 +1,4 @@
-"""Default configuration values for the Foundry evaluation system."""
+"""Default configuration values for the Doc Agent evaluation system."""
 
 from pathlib import Path
 

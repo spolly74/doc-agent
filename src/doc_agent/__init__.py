@@ -1,6 +1,6 @@
-"""Foundry Content Evaluation System.
+"""Doc Agent.
 
-An agentic content evaluation system for Microsoft Foundry technical documentation.
+An agentic content evaluation system for technical documentation.
 Evaluates articles against a 7-dimension rubric, performs JTBD coverage analysis,
 validates code samples, and produces actionable reports.
 """

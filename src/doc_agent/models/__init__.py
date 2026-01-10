@@ -1,4 +1,4 @@
-"""Domain models for the Foundry evaluation system."""
+"""Domain models for the Doc Agent evaluation system."""
 
 from doc_agent.models.article import Article, ArticleMetadata, CodeBlock
 from doc_agent.models.code_sample import (

@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from doc_agent.config.models import FoundryEvalConfig
+from doc_agent.config.models import DocAgentConfig
 from doc_agent.llm.factory import create_llm_provider
 from doc_agent.models.enums import RunMode
 from doc_agent.models.evaluation import BatchEvaluationResult
@@ -22,7 +22,7 @@ class EvaluationRunner:
 
     def __init__(
         self,
-        config: FoundryEvalConfig,
+        config: DocAgentConfig,
         output_path: Optional[Path] = None,
         state_db_path: Optional[str] = None,
     ):
@@ -249,7 +249,7 @@ class EvaluationRunner:
 
 
 async def run_evaluation(
-    config: FoundryEvalConfig,
+    config: DocAgentConfig,
     run_mode: RunMode,
     target_path: Path,
     output_path: Optional[Path] = None,

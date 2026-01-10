@@ -1,4 +1,4 @@
-"""Shared utilities for the Foundry evaluation system."""
+"""Shared utilities for the Doc Agent evaluation system."""
 
 from doc_agent.utils.file_utils import (
     find_files,

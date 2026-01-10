@@ -1,4 +1,4 @@
-"""File system utilities for the Foundry evaluation system."""
+"""File system utilities for the Doc Agent evaluation system."""
 
 import fnmatch
 from pathlib import Path

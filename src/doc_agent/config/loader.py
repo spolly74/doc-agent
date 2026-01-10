@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from doc_agent.config.defaults import CONFIG_SEARCH_PATHS, DEFAULT_CONFIG_FILENAME
-from doc_agent.config.models import FoundryEvalConfig
+from doc_agent.config.models import DocAgentConfig
 
 
 def find_config_file(explicit_path: Optional[Path] = None) -> Optional[Path]:
@@ -45,7 +45,7 @@ def load_config_file(path: Path) -> dict[str, Any]:
 
 
 def merge_cli_overrides(
-    config: FoundryEvalConfig,
+    config: DocAgentConfig,
     target: Optional[Path] = None,
     output: Optional[Path] = None,
     samples_repo: Optional[Path] = None,
@@ -54,7 +54,7 @@ def merge_cli_overrides(
     verbose: Optional[int] = None,
     model: Optional[str] = None,
     concurrency: Optional[int] = None,
-) -> FoundryEvalConfig:
+) -> DocAgentConfig:
     """Merge CLI overrides into the configuration.
 
     CLI arguments take precedence over config file values.
@@ -100,13 +100,13 @@ def merge_cli_overrides(
     if concurrency is not None:
         data["llm"]["max_concurrent_requests"] = concurrency
 
-    return FoundryEvalConfig.model_validate(data)
+    return DocAgentConfig.model_validate(data)
 
 
 def load_config(
     config_path: Optional[Path] = None,
     **cli_overrides: Any,
-) -> FoundryEvalConfig:
+) -> DocAgentConfig:
     """Load configuration with CLI overrides.
 
     Configuration is loaded from the following sources (in order of priority):
@@ -123,13 +123,13 @@ def load_config(
         Merged configuration object.
     """
     # Start with default configuration
-    config = FoundryEvalConfig()
+    config = DocAgentConfig()
 
     # Try to load from config file
     found_config = find_config_file(config_path)
     if found_config is not None:
         file_data = load_config_file(found_config)
-        config = FoundryEvalConfig.model_validate(file_data)
+        config = DocAgentConfig.model_validate(file_data)
 
     # Check for environment variable overrides
     if api_key := os.environ.get("ANTHROPIC_API_KEY"):

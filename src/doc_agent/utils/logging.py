@@ -1,4 +1,4 @@
-"""Logging configuration for the Foundry evaluation system."""
+"""Logging configuration for the Doc Agent evaluation system."""
 
 import logging
 import sys

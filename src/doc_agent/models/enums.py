@@ -1,4 +1,4 @@
-"""Enumerations for the Foundry evaluation system."""
+"""Enumerations for the Doc Agent evaluation system."""
 
 from enum import Enum
 
@@ -35,7 +35,7 @@ class Severity(str, Enum):
 
 
 class ContentPattern(str, Enum):
-    """Microsoft Learn content patterns (from ms.topic)."""
+    """Documentation content patterns (e.g., from ms.topic metadata)."""
 
     HOW_TO = "how-to"
     QUICKSTART = "quickstart"

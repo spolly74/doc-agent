@@ -1,1 +1,1 @@
-"""CLI commands for the Foundry evaluation system."""
+"""CLI commands for the Doc Agent evaluation system."""

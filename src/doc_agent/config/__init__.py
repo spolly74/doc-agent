@@ -1,16 +1,16 @@
-"""Configuration management for the Foundry evaluation system."""
+"""Configuration management for the Doc Agent evaluation system."""
 
 from doc_agent.config.loader import load_config
 from doc_agent.config.models import (
     EvaluationConfig,
-    FoundryEvalConfig,
+    DocAgentConfig,
     LLMConfig,
     OutputConfig,
 )
 
 __all__ = [
     "EvaluationConfig",
-    "FoundryEvalConfig",
+    "DocAgentConfig",
     "LLMConfig",
     "OutputConfig",
     "load_config",

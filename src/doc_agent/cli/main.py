@@ -1,4 +1,4 @@
-"""Main CLI entry point for foundry-eval."""
+"""Main CLI entry point for doc-agent."""
 
 import asyncio
 import sys
@@ -16,8 +16,8 @@ from doc_agent.utils.logging import setup_logging
 
 # Create the main Typer app
 app = typer.Typer(
-    name="foundry-eval",
-    help="Agentic content evaluation system for Microsoft Foundry documentation.",
+    name="doc-agent",
+    help="Agentic content evaluation system for technical documentation.",
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
@@ -46,9 +46,9 @@ def main(
         ),
     ] = None,
 ) -> None:
-    """Foundry Content Evaluation System.
+    """Doc Agent.
 
-    Evaluate Microsoft Foundry documentation against a developer-focused rubric.
+    Evaluate technical documentation against a developer-focused rubric.
     """
     pass
 

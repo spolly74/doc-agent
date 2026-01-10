@@ -1,4 +1,4 @@
-"""Pydantic configuration models for the Foundry evaluation system."""
+"""Pydantic configuration models for the Doc Agent evaluation system."""
 
 from enum import Enum
 from pathlib import Path
@@ -85,7 +85,7 @@ class OutputConfig(BaseModel):
     gitignore_output: bool = True
 
 
-class FoundryEvalConfig(BaseModel):
+class DocAgentConfig(BaseModel):
     """Root configuration model for the evaluation system."""
 
     llm: LLMConfig = Field(default_factory=LLMConfig)

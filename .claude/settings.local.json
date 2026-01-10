@@ -8,7 +8,9 @@
       "Bash(python -m pytest:*)",
       "Bash(python -m foundry_eval:*)",
       "Read(//private/tmp/eval-test-output/**)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(pip install:*)",
+      "Bash(doc-agent:*)"
     ]
   }
 }
