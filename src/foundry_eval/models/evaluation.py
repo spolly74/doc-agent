@@ -1,6 +1,6 @@
 """Evaluation result models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field, computed_field
@@ -59,7 +59,7 @@ class EvaluationResult(BaseModel):
     article_title: str
 
     # Timing
-    evaluated_at: datetime = Field(default_factory=datetime.utcnow)
+    evaluated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Scores
     dimension_scores: list[DimensionScore] = Field(default_factory=list)
