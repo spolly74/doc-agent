@@ -164,6 +164,13 @@ class EvaluationResult(BaseModel):
                 return dim_score.score
         return None
 
+    def get_dimension_score_by_name(self, name: str) -> Optional[float]:
+        """Get the score for a dimension by its string name."""
+        for dim_score in self.dimension_scores:
+            if dim_score.dimension.value == name:
+                return dim_score.score
+        return None
+
     def is_below_threshold(self, threshold: float = 4.0) -> bool:
         """Check if the overall score is below the given threshold."""
         return self.overall_score < threshold

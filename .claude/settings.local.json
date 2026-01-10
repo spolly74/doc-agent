@@ -5,7 +5,9 @@
       "Bash(foundry-eval full:*)",
       "Bash(foundry-eval:*)",
       "Bash(python -m pytest tests/unit/test_context.py -v)",
-      "Bash(python -m pytest:*)"
+      "Bash(python -m pytest:*)",
+      "Bash(python -m foundry_eval:*)",
+      "Read(//private/tmp/eval-test-output/**)"
     ]
   }
 }

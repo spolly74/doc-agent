@@ -1,0 +1,159 @@
+# Content Evaluation Report
+
+**Generated:** {{ generated_at }}
+**Scope:** {{ target_path }}
+**Mode:** {{ run_mode | title }} Evaluation
+**Articles evaluated:** {{ stats.total_articles }}
+{% if started_at and completed_at %}
+**Duration:** {{ ((completed_at - started_at).total_seconds() / 60) | round(1) }} minutes
+{% endif %}
+
+---
+
+## Executive Summary
+
+| Metric | Value |
+|--------|-------|
+| Average overall score | {{ "%.1f" | format(stats.average_score) }} / 7 |
+| Articles below threshold (< {{ threshold }}) | {{ stats.below_threshold }} ({{ (stats.below_threshold * 100 // (stats.total_articles or 1)) }}%) |
+| Score range | {{ "%.1f" | format(stats.min_score) }} - {{ "%.1f" | format(stats.max_score) }} |
+| Critical issues | {{ stats.issues_by_severity.get('critical', 0) }} |
+| High issues | {{ stats.issues_by_severity.get('high', 0) }} |
+| Medium issues | {{ stats.issues_by_severity.get('medium', 0) }} |
+| Low issues | {{ stats.issues_by_severity.get('low', 0) }} |
+
+{% if stats.total_articles > 0 %}
+### Score Distribution
+
+| Range | Count | Percentage |
+|-------|-------|------------|
+{% for range, count in stats.score_distribution.items() %}
+| {{ range }} | {{ count }} | {{ (count * 100 // (stats.total_articles or 1)) }}% |
+{% endfor %}
+{% endif %}
+
+---
+
+## Top 10 Articles Requiring Attention
+
+These articles have the lowest overall scores and should be prioritized for improvement.
+
+| Rank | Article | Score | Top Issue |
+|------|---------|-------|-----------|
+{% for result in top_articles[:10] %}
+{% set path = result.article_path %}
+{% if path | length > 50 %}
+{% set path = "..." ~ path[-47:] %}
+{% endif %}
+{% set top_issue = result.issues[0].title if result.issues else "None" %}
+{% if top_issue | length > 35 %}
+{% set top_issue = top_issue[:32] ~ "..." %}
+{% endif %}
+| {{ loop.index }} | `{{ path }}` | {{ "%.1f" | format(result.overall_score) }} | {{ top_issue }} |
+{% endfor %}
+
+---
+
+## Score Distribution by Dimension
+
+This table shows how articles perform across each evaluation dimension.
+
+| Dimension | Avg | Min | Max | Below Threshold |
+|-----------|-----|-----|-----|-----------------|
+{% for dim, avg in stats.dimension_averages.items() %}
+{% set dim_scores = [] %}
+{% for r in results %}
+{% set score = r.get_dimension_score_by_name(dim) %}
+{% if score is not none %}
+{% set _ = dim_scores.append(score) %}
+{% endif %}
+{% endfor %}
+{% set min_score = dim_scores | min if dim_scores else 0 %}
+{% set max_score = dim_scores | max if dim_scores else 0 %}
+{% set below = dim_scores | select('lt', threshold) | list | length %}
+| {{ dim | replace('_', ' ') | title }} | {{ "%.1f" | format(avg) }} | {{ "%.0f" | format(min_score) }} | {{ "%.0f" | format(max_score) }} | {{ below }} |
+{% endfor %}
+
+---
+
+## Common Issues (Systemic)
+
+These issues appear across multiple articles and may indicate systemic documentation problems.
+
+{% if common_issues %}
+{% for issue_title, count, articles in common_issues[:10] %}
+### {{ loop.index }}. {{ issue_title | title }} ({{ count }} articles)
+
+**Affected articles:**
+{% for article in articles[:5] %}
+- `{{ article }}`
+{% endfor %}
+{% if articles | length > 5 %}
+- *...and {{ articles | length - 5 }} more*
+{% endif %}
+
+{% endfor %}
+{% else %}
+No common issues found across multiple articles.
+{% endif %}
+
+---
+
+## Detailed Results by Article
+
+{% for result in results | sort(attribute='overall_score') %}
+### {{ result.article_title or result.article_path }}
+
+**Path:** `{{ result.article_path }}`
+**Overall Score:** {{ "%.1f" | format(result.overall_score) }} / 7
+{% if result.overall_score < threshold %}
+**Status:** ⚠️ Below threshold
+{% else %}
+**Status:** ✅ Meets threshold
+{% endif %}
+
+#### Dimension Scores
+
+| Dimension | Score | Justification |
+|-----------|-------|---------------|
+{% for ds in result.dimension_scores %}
+| {{ ds.dimension.value | replace('_', ' ') | title }} | {{ ds.score }} | {{ ds.rationale[:80] }}{% if ds.rationale | length > 80 %}...{% endif %} |
+{% endfor %}
+
+{% if result.issues %}
+#### Issues ({{ result.issues | length }})
+
+{% for issue in result.issues %}
+- **[{{ issue.severity.value | upper }}]** {{ issue.title }}
+{% if issue.location %}  - Location: {{ issue.location }}{% endif %}
+{% if issue.suggestion %}  - Suggestion: {{ issue.suggestion[:100] }}{% if issue.suggestion | length > 100 %}...{% endif %}{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if result.recommendations %}
+#### Recommendations
+
+{% for rec in result.recommendations %}
+- {{ rec }}
+{% endfor %}
+{% endif %}
+
+---
+
+{% endfor %}
+
+## Next Steps
+
+Based on this evaluation, the following actions are recommended:
+
+1. **Address critical issues first:** {{ stats.issues_by_severity.get('critical', 0) }} articles have critical issues that need immediate attention.
+2. **Review lowest-scoring articles:** The {{ [10, stats.below_threshold] | min }} articles below threshold should be prioritized for revision.
+3. **Fix systemic issues:** Address common issues that appear across multiple articles to improve overall documentation quality.
+{% if stats.dimension_averages %}
+{% set lowest_dim = stats.dimension_averages | dictsort(by='value') | first %}
+4. **Focus on weakest dimension:** "{{ lowest_dim[0] | replace('_', ' ') | title }}" has the lowest average score ({{ "%.1f" | format(lowest_dim[1]) }}) and may need targeted improvement efforts.
+{% endif %}
+
+---
+
+*Report generated by Foundry Content Evaluation System*

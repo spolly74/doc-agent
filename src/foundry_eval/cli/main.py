@@ -1,13 +1,18 @@
 """Main CLI entry point for foundry-eval."""
 
+import asyncio
+import sys
 from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from foundry_eval import __version__
 from foundry_eval.config import load_config
+from foundry_eval.orchestration.runner import EvaluationRunner
+from foundry_eval.utils.logging import setup_logging
 
 # Create the main Typer app
 app = typer.Typer(
@@ -46,6 +51,29 @@ def main(
     Evaluate Microsoft Foundry documentation against a developer-focused rubric.
     """
     pass
+
+
+def _print_summary(batch_result) -> None:
+    """Print a summary table of evaluation results."""
+    table = Table(title="Evaluation Summary")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Total Articles", str(batch_result.total_articles))
+    table.add_row("Evaluated", str(batch_result.evaluated_articles))
+    table.add_row("Failed", str(batch_result.failed_articles))
+    table.add_row("Average Score", f"{batch_result.average_score:.2f}")
+    table.add_row("Below Threshold", str(len(batch_result.articles_below_threshold)))
+
+    if batch_result.duration_seconds:
+        minutes = batch_result.duration_seconds / 60
+        table.add_row("Duration", f"{minutes:.1f} minutes")
+
+    if batch_result.total_input_tokens > 0:
+        table.add_row("Input Tokens", f"{batch_result.total_input_tokens:,}")
+        table.add_row("Output Tokens", f"{batch_result.total_output_tokens:,}")
+
+    console.print(table)
 
 
 # Common options used across commands
@@ -153,13 +181,37 @@ def full(
         concurrency=concurrency,
     )
 
+    # Set up logging based on verbosity
+    setup_logging(verbosity=verbose)
+
     console.print(f"[bold green]Starting full evaluation[/bold green]")
     console.print(f"  Target: {target}")
     console.print(f"  Output: {output}")
     console.print(f"  Model: {cfg.llm.model}")
+    console.print()
 
-    # TODO: Implement full evaluation
-    console.print("[yellow]Full evaluation not yet implemented[/yellow]")
+    try:
+        runner = EvaluationRunner(config=cfg, output_path=output)
+        batch_result = asyncio.run(runner.run_full(target_path=target, force=force))
+
+        # Print summary
+        _print_summary(batch_result)
+
+        # Print output paths
+        paths = runner.get_output_paths()
+        console.print()
+        console.print("[bold]Output files:[/bold]")
+        console.print(f"  CSV:    {paths['csv']}")
+        console.print(f"  Report: {paths['report']}")
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Evaluation interrupted by user[/yellow]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"\n[bold red]Error:[/bold red] {e}")
+        if verbose >= 2:
+            console.print_exception()
+        sys.exit(1)
 
 
 @app.command()
@@ -184,6 +236,14 @@ def tiered(
     ] = 4.0,
     config: ConfigOption = None,
     verbose: VerboseOption = 1,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            "-f",
+            help="Force re-evaluation, ignoring cached results.",
+        ),
+    ] = False,
 ) -> None:
     """Run tiered evaluation (quick scan + deep evaluation where needed).
 
@@ -202,12 +262,39 @@ def tiered(
         verbose=verbose,
     )
 
+    # Set up logging based on verbosity
+    setup_logging(verbosity=verbose)
+
     console.print(f"[bold green]Starting tiered evaluation[/bold green]")
     console.print(f"  Target: {target}")
     console.print(f"  Threshold: {threshold}")
+    console.print(f"  Output: {output}")
+    console.print()
 
-    # TODO: Implement tiered evaluation
-    console.print("[yellow]Tiered evaluation not yet implemented[/yellow]")
+    try:
+        runner = EvaluationRunner(config=cfg, output_path=output)
+        batch_result = asyncio.run(
+            runner.run_tiered(target_path=target, threshold=threshold, force=force)
+        )
+
+        # Print summary
+        _print_summary(batch_result)
+
+        # Print output paths
+        paths = runner.get_output_paths()
+        console.print()
+        console.print("[bold]Output files:[/bold]")
+        console.print(f"  CSV:    {paths['csv']}")
+        console.print(f"  Report: {paths['report']}")
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Evaluation interrupted by user[/yellow]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"\n[bold red]Error:[/bold red] {e}")
+        if verbose >= 2:
+            console.print_exception()
+        sys.exit(1)
 
 
 @app.command()
