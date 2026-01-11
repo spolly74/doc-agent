@@ -49,10 +49,6 @@ def init_session_state():
         st.session_state.evaluation_results = None
     if "is_running" not in st.session_state:
         st.session_state.is_running = False
-    if "progress" not in st.session_state:
-        st.session_state.progress = 0
-    if "status_message" not in st.session_state:
-        st.session_state.status_message = ""
     if "target_browse_path" not in st.session_state:
         st.session_state.target_browse_path = str(Path.home())
     if "output_browse_path" not in st.session_state:
@@ -249,7 +245,7 @@ def render_sidebar():
             }
 
         if st.session_state.is_running:
-            st.info(f"⏳ {st.session_state.status_message}")
+            st.info("⏳ Evaluation in progress...")
 
         return None
 
