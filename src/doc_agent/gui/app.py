@@ -437,12 +437,28 @@ def render_results():
                 st.success("No issues found!")
 
 
-async def run_evaluation(config_params: dict):
-    """Run the evaluation asynchronously."""
+def count_markdown_files(target_path: Path) -> int:
+    """Count markdown files in the target directory."""
+    count = 0
+    for f in target_path.rglob("*.md"):
+        # Skip common non-article files
+        if f.name.lower() not in ("readme.md", "changelog.md", "contributing.md"):
+            count += 1
+    return count
+
+
+async def run_evaluation(config_params: dict, status_container):
+    """Run the evaluation asynchronously with status updates.
+
+    Args:
+        config_params: Configuration parameters dict.
+        status_container: Streamlit status container for updates.
+    """
     st.session_state.is_running = True
-    st.session_state.status_message = "Loading configuration..."
 
     try:
+        status_container.update(label="Loading configuration...", state="running")
+
         # Load config
         cfg = load_config(
             target=Path(config_params["target"]),
@@ -453,7 +469,7 @@ async def run_evaluation(config_params: dict):
             threshold=config_params["threshold"],
         )
 
-        st.session_state.status_message = "Initializing evaluator..."
+        status_container.update(label="Initializing evaluator...", state="running")
 
         # Create runner
         runner = EvaluationRunner(
@@ -461,7 +477,24 @@ async def run_evaluation(config_params: dict):
             output_path=Path(config_params["output"]),
         )
 
-        st.session_state.status_message = "Running evaluation..."
+        # Count articles for estimate
+        article_count = config_params.get("article_count", 0)
+        concurrency = config_params["concurrency"]
+
+        # Estimate: ~5-15 seconds per article depending on provider, divided by concurrency
+        est_per_article = 10 if config_params["provider"] == "claude" else 5
+        est_seconds = (article_count * est_per_article) / concurrency
+        est_minutes = est_seconds / 60
+
+        if est_minutes < 1:
+            time_est = f"~{int(est_seconds)} seconds"
+        else:
+            time_est = f"~{est_minutes:.1f} minutes"
+
+        status_container.update(
+            label=f"Evaluating {article_count} articles (ETA: {time_est})...",
+            state="running",
+        )
 
         # Run evaluation
         if config_params["mode"] == "tiered":
@@ -475,10 +508,10 @@ async def run_evaluation(config_params: dict):
             )
 
         st.session_state.evaluation_results = batch_result
-        st.session_state.status_message = "Complete!"
+        status_container.update(label="Complete!", state="complete")
 
     except Exception as e:
-        st.session_state.status_message = f"Error: {e}"
+        status_container.update(label=f"Error: {e}", state="error")
         raise
 
     finally:
@@ -502,12 +535,20 @@ def main():
         if not target.exists():
             st.error(f"Target directory does not exist: {target}")
         else:
-            with st.spinner("Running evaluation..."):
-                try:
-                    asyncio.run(run_evaluation(run_config))
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Evaluation failed: {e}")
+            # Count articles first
+            article_count = count_markdown_files(target)
+            if article_count == 0:
+                st.error(f"No markdown files found in: {target}")
+            else:
+                run_config["article_count"] = article_count
+
+                # Use status container for progress
+                with st.status(f"Found {article_count} articles to evaluate...", expanded=True) as status:
+                    try:
+                        asyncio.run(run_evaluation(run_config, status))
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Evaluation failed: {e}")
 
     # Results
     render_results()
