@@ -70,9 +70,13 @@ def render_directory_browser(key: str, label: str) -> str | None:
         Selected directory path, or None if nothing selected
     """
     browse_key = f"{key}_browse_path"
+    expanded_key = f"{key}_browser_expanded"
     current_path = Path(st.session_state.get(browse_key, str(Path.home())))
 
-    with st.expander(f"📁 Browse for {label}"):
+    # Track if browser should be expanded
+    is_expanded = st.session_state.get(expanded_key, False)
+
+    with st.expander(f"📁 Browse for {label}", expanded=is_expanded):
         # Show current location
         st.caption(f"Current: {current_path}")
 
@@ -81,15 +85,18 @@ def render_directory_browser(key: str, label: str) -> str | None:
         with col1:
             if st.button("🏠 Home", key=f"{key}_home"):
                 st.session_state[browse_key] = str(Path.home())
+                st.session_state[expanded_key] = True  # Keep open
                 st.rerun()
         with col2:
             if st.button("⬆️ Up", key=f"{key}_up"):
                 parent = current_path.parent
                 if parent != current_path:
                     st.session_state[browse_key] = str(parent)
+                    st.session_state[expanded_key] = True  # Keep open
                     st.rerun()
         with col3:
             if st.button(f"✅ Select This Folder", key=f"{key}_select", type="primary"):
+                st.session_state[expanded_key] = False  # Close after selection
                 return str(current_path)
 
         # List directories
@@ -106,6 +113,7 @@ def render_directory_browser(key: str, label: str) -> str | None:
                 for d in dirs[:20]:  # Limit to 20 to avoid overwhelming
                     if st.button(f"📂 {d.name}", key=f"{key}_{d.name}", use_container_width=True):
                         st.session_state[browse_key] = str(d)
+                        st.session_state[expanded_key] = True  # Keep open
                         st.rerun()
 
                 if len(dirs) > 20:
