@@ -15,12 +15,42 @@ from doc_agent.orchestration.runner import EvaluationRunner
 
 logger = logging.getLogger("doc_agent.jobs.worker")
 
-# PID file location
-PID_FILE = Path.home() / ".doc-agent" / "worker.pid"
+# File locations
+DOC_AGENT_DIR = Path.home() / ".doc-agent"
+PID_FILE = DOC_AGENT_DIR / "worker.pid"
+LOG_FILE = DOC_AGENT_DIR / "worker.log"
 
 # Worker settings
 POLL_INTERVAL = 2  # seconds between checking for jobs
 IDLE_TIMEOUT = 300  # 5 minutes of idle before auto-exit
+
+
+def setup_logging() -> None:
+    """Set up file-based logging for the worker."""
+    DOC_AGENT_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Create file handler
+    file_handler = logging.FileHandler(LOG_FILE, mode="a")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    )
+
+    # Create console handler (for when run directly)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    )
+
+    # Configure root logger for doc_agent
+    root_logger = logging.getLogger("doc_agent")
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
+
+    # Also capture warnings
+    logging.captureWarnings(True)
 
 
 class Worker:
@@ -205,17 +235,16 @@ def start_worker(db_path: Path | str | None = None, once: bool = False) -> None:
 
 def main():
     """Entry point for doc-agent-worker command."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-
     import argparse
 
     parser = argparse.ArgumentParser(description="Doc Agent background worker")
     parser.add_argument("--once", action="store_true", help="Process one job and exit")
     parser.add_argument("--db", type=str, help="Path to jobs database")
     args = parser.parse_args()
+
+    # Set up logging to file
+    setup_logging()
+    logger.info(f"Worker starting (log file: {LOG_FILE})")
 
     start_worker(db_path=args.db, once=args.once)
 
