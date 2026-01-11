@@ -21,6 +21,7 @@ class Dimension(str, Enum):
     CODE_COMPLETENESS = "code_completeness"
     STRUCTURE = "structure"
     ACCURACY = "accuracy"
+    BRANDING_COMPLIANCE = "branding_compliance"
     JTBD_ALIGNMENT = "jtbd_alignment"
 
 
@@ -71,6 +72,7 @@ class ContentPattern(str, Enum):
             "tutorial": cls.TUTORIAL,
             "concept": cls.CONCEPT,
             "conceptual": cls.CONCEPT,
+            "concept-article": cls.CONCEPT,
             "reference": cls.REFERENCE,
             "overview": cls.OVERVIEW,
             "faq": cls.FAQ,

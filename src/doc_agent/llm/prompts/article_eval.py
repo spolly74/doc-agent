@@ -1,23 +1,82 @@
-"""Prompts for article evaluation."""
+"""Prompts for article evaluation.
+
+Evaluation criteria derived from documentation standards defined in:
+- copilot-instructions.md (writing style, structure)
+- dev-focused.instructions.md (developer focus, code practices)
+- foundry-branding.instructions.md (terminology, branding)
+- Pattern templates (how-to, quickstart, tutorial, concept)
+"""
 
 from doc_agent.models.article import Article
+from doc_agent.models.enums import ContentPattern
 
-ARTICLE_EVALUATION_SYSTEM_PROMPT = """You are an expert technical documentation evaluator. Your role is to evaluate documentation articles against a developer-focused rubric.
+ARTICLE_EVALUATION_SYSTEM_PROMPT = """You are an expert technical documentation evaluator for Microsoft Learn content. Evaluate articles against an 8-dimension rubric focused on developer experience.
 
-You evaluate with these principles:
-1. **Developer-first**: Documentation should minimize time-to-first-success for developers
-2. **Code-forward**: Working code examples should appear early and be complete
-3. **Scannable**: Developers should be able to quickly find what they need
-4. **Accurate**: Technical content must be correct and current
-5. **Structured**: Articles should follow consistent patterns
+Core principles:
+1. **Developer-first**: Minimize time-to-first-success
+2. **Code-forward**: Working code early, complete with imports
+3. **Scannable**: Short paragraphs, clear headings, logical structure
+4. **Accurate**: Current APIs, correct terminology, no fabrication
+5. **Pattern-compliant**: Follow the correct article pattern
+6. **Brand-consistent**: Use correct Microsoft terminology
 
-Be specific in your feedback. Cite line numbers or section names when identifying issues. Provide actionable recommendations.
+Be specific. Cite line numbers or sections. Provide actionable recommendations.
+Respond with valid JSON matching the requested schema."""
 
-You must respond with valid JSON matching the requested schema."""
+
+def _get_pattern_criteria(ms_topic: str | None) -> str:
+    """Get pattern-specific evaluation criteria based on ms.topic."""
+    pattern = ContentPattern.from_ms_topic(ms_topic)
+
+    if pattern == ContentPattern.HOW_TO:
+        return """**How-to Pattern Requirements:**
+- H1: "<verb> * <noun>" format (no gerunds)
+- Prerequisites must be first H2
+- Each H2: verb+noun title, brief intro, then ordered steps
+- Validation/verification steps included
+- Next step OR Related content section (not both)
+- No bulleted list of sections in intro"""
+
+    elif pattern == ContentPattern.QUICKSTART:
+        return """**Quickstart Pattern Requirements:**
+- H1: "Quickstart: <verb> * <noun>"
+- Target: completable in <=10 minutes
+- Free trial link before first H2
+- Prerequisites must be first H2
+- Minimal narrative, one success checkpoint
+- Clean up resources section (optional)
+- Single outcome focus"""
+
+    elif pattern == ContentPattern.TUTORIAL:
+        return """**Tutorial Pattern Requirements:**
+- H1: "Tutorial: <verb> * <noun>"
+- Target: completable in <=30 minutes
+- Green checklist outline before first H2
+- Free trial link before first H2
+- Prerequisites must be first H2 (not numbered)
+- Staged progression, each stage builds on prior
+- Clean up resources section required
+- Single learning objective"""
+
+    elif pattern in (ContentPattern.CONCEPT, ContentPattern.OVERVIEW):
+        return """**Concept/Overview Pattern Requirements:**
+- H1: "<noun> concepts" OR "What is <noun>?" OR "<noun> overview"
+- NO procedural content or numbered steps
+- Define the concept early ("X is a Y that does Z")
+- Use examples to illustrate abstract ideas
+- Link to related how-to/tutorial content
+- Code samples NOT expected (evaluate links instead)"""
+
+    else:
+        return """**General Pattern Requirements:**
+- Clear H1 that sets expectations
+- Prerequisites section if procedural
+- Logical heading hierarchy
+- Next step or Related content section"""
 
 
 def build_article_evaluation_prompt(article: Article) -> str:
-    """Build the full evaluation prompt for an article.
+    """Build the evaluation prompt for an article.
 
     Args:
         article: Article object to evaluate.
@@ -25,12 +84,17 @@ def build_article_evaluation_prompt(article: Article) -> str:
     Returns:
         Formatted evaluation prompt.
     """
-    # Truncate content if very long (to stay within context limits)
     content = article.content_without_frontmatter
     if len(content) > 50000:
         content = content[:50000] + "\n\n[Content truncated due to length...]"
 
-    return f"""Evaluate this technical documentation article against the 7-dimension rubric.
+    pattern_criteria = _get_pattern_criteria(article.metadata.ms_topic)
+    is_concept = ContentPattern.from_ms_topic(article.metadata.ms_topic) in (
+        ContentPattern.CONCEPT,
+        ContentPattern.OVERVIEW,
+    )
+
+    return f"""Evaluate this Microsoft Learn article against the 8-dimension rubric.
 
 ## Article Information
 
@@ -45,124 +109,109 @@ def build_article_evaluation_prompt(article: Article) -> str:
 
 {content}
 
-## Evaluation Instructions
+## Evaluation Dimensions (Score 1-7)
 
-Score each dimension from 1-7 based on the criteria below. Provide specific justification and identify issues.
+{pattern_criteria}
 
-### Dimension 1: Pattern Compliance (pattern_compliance)
-*How well does the article follow the appropriate content pattern?*
+### 1. Pattern Compliance (pattern_compliance)
+*Does the article follow the correct pattern for ms.topic="{article.metadata.ms_topic or 'unknown'}"?*
 
-Based on ms.topic="{article.metadata.ms_topic or 'unknown'}", evaluate whether the article:
-- Follows the correct pattern (how-to, quickstart, tutorial, concept, reference)
-- Has all required sections for that pattern
-- Uses appropriate section ordering
+Check:
+- Correct H1 format for the pattern
+- Required sections present and ordered correctly
+- Prerequisites as first H2 (for procedural content)
+- Appropriate section structure
 
-Score guide:
-- 1-2: Wrong pattern or missing critical sections
-- 3-4: Mostly correct but structural issues
-- 5-6: Good pattern adherence
-- 7: Exemplary, could serve as template
+Scoring: 1-2=wrong pattern/missing sections, 3-4=structural issues, 5-6=good adherence, 7=exemplary
 
-### Dimension 2: Developer Focus (dev_focus)
-*How well does the article support "time to first success" for developers?*
+### 2. Developer Focus (dev_focus)
+*Does the article minimize time-to-first-success?*
 
-Evaluate:
-- Position of first code block (earlier = better)
-- Presence of minimal runnable example
-- Code-to-prose ratio (more code, less fluff)
-- Prerequisites completeness
-- Expected output documentation
+{"For concept articles, evaluate clarity and actionable links instead of code position." if is_concept else "Check:"}
+{'''- Position of first code block (earlier is better)
+- Minimal "hello world" example present
+- Prerequisites complete (including RBAC roles)
+- Each snippet explains: what it does, inputs, expected output
+- Reference links after code blocks (classes, methods, schemas)''' if not is_concept else '''- Clear explanation of the concept upfront
+- Actionable takeaways for developers
+- Links to related procedural content (how-to, tutorials)'''}
 
-**Note**: For concept, overview, or concept-article types (ms.topic), code samples are not expected. Evaluate based on clarity, actionable insights, and links to related how-to/tutorial content instead.
+Scoring: 1-2={"confusing, no actionable content" if is_concept else "code buried or missing"}, 3-4={"limited guidance" if is_concept else "code delayed"}, 5-6={"clear with good links" if is_concept else "code-first approach"}, 7=exemplary
 
-Score guide:
-- 1-2: No code or code buried after extensive prose (or for concepts: confusing, no actionable takeaways)
-- 3-4: Code present but delayed or lacking context (or for concepts: limited practical guidance)
-- 5-6: Code-first approach with good context (or for concepts: clear explanations with good links)
-- 7: Exemplary - hello world within first scroll (or for concepts: excellent clarity and next steps)
+### 3. Code Quality (code_quality)
+*Are code samples well-written and production-ready?*
 
-### Dimension 3: Code Quality (code_quality)
-*How well-written and maintainable are the code samples?*
-
-Evaluate:
+{"Set score to null - code not expected for concept articles." if is_concept else '''Check:
 - Language tags on all code blocks
-- Import/using statements included
-- Line length ≤80 characters
-- Error handling where appropriate
-- No hardcoded secrets
+- Import/using statements included at top
+- Line length <=80 characters (no horizontal scroll)
+- No hardcoded secrets or credentials
 - Current API versions
+- Error handling where appropriate'''}
 
-Score guide:
-- 1-2: Broken code or security issues
-- 3-4: Functional but poor practices
-- 5-6: Good quality, production-ready patterns
-- 7: Exemplary reference implementation
+{"" if is_concept else "Scoring: 1-2=broken/security issues, 3-4=functional but poor practices, 5-6=production-ready, 7=exemplary reference"}
 
-If no code is present, set score to null. This is expected for concept, overview, or concept-article types.
-
-### Dimension 4: Code Completeness (code_completeness)
+### 4. Code Completeness (code_completeness)
 *Does the article have all necessary code samples?*
 
-Evaluate:
+{"Set score to null - evaluate links to procedural content instead." if is_concept else '''Check:
 - All procedural steps have corresponding code
-- Multi-language support where appropriate
-- Full sample available (linked or inline)
-- Reference links to SDK docs
+- Multi-language tabs if applicable (order: Python, C#, JavaScript, Java)
+- Full sample linked or available
+- Reference links to SDK documentation after snippets'''}
 
-Score guide:
-- 1-2: Critical samples missing
-- 3-4: Adequate but notable gaps
-- 5-6: Good coverage
-- 7: Complete - every operation demonstrated
+{"" if is_concept else "Scoring: 1-2=critical samples missing, 3-4=notable gaps, 5-6=good coverage, 7=complete"}
 
-**Note**: For concept, overview, or concept-article types, evaluate whether the article appropriately links to related how-to content with code examples rather than expecting inline code.
+### 5. Structure (structure)
+*Is the article well-organized for scanning?*
 
-### Dimension 5: Structure (structure)
-*How well-organized is the article for developer consumption?*
+Check:
+- Heading hierarchy (no skipped levels, no stacked headings without text)
+- Sentence case for headings (not Title Case)
+- Short paragraphs (1-3 sentences)
+- Lists/tables for scannable content
+- No gerunds in headings
+- Oxford comma in lists
 
-Evaluate:
-- Heading hierarchy (no skipped levels)
-- Logical section ordering
-- Use of lists, tables, callouts
-- Paragraph length (no walls of text)
-- Clear goal statement
+Scoring: 1-2=no clear structure, 3-4=basic but issues, 5-6=easy to scan, 7=optimal architecture
 
-Score guide:
-- 1-2: No clear structure
-- 3-4: Basic structure but issues
-- 5-6: Good structure, easy to scan
-- 7: Optimal information architecture
+### 6. Accuracy (accuracy)
+*Is the content technically correct and current?*
 
-### Dimension 6: Accuracy (accuracy)
-*Is the content technically correct and up-to-date?*
-
-Evaluate:
+Check:
 - ms.date currency (flag if >12 months old)
-- API versions current
-- No deprecated parameters/methods
+- API versions current (no deprecated methods)
+- No fabricated parameters or features
 - Terminology consistent with product
+- Version-specific content properly tagged with monikers
 
-Score guide:
-- 1-2: Major errors or severely outdated
-- 3-4: Some inaccuracies or outdated elements
-- 5-6: Accurate and reasonably current
-- 7: Verified accurate, latest APIs
+Scoring: 1-2=major errors/severely outdated, 3-4=some inaccuracies, 5-6=accurate and current, 7=verified latest
 
-### Dimension 7: JTBD Alignment (jtbd_alignment)
-*How well does this article support its intended customer job?*
+### 7. Branding Compliance (branding_compliance)
+*Does the article use correct Microsoft terminology?*
 
-Based on the customer intent: "{article.metadata.customer_intent or 'Not specified'}"
+Check:
+- First-mention vs subsequent-mention patterns (e.g., "Microsoft Foundry" first, then "Foundry")
+- Protected terms unchanged (Azure OpenAI, SDK library names)
+- Historical context preserved (don't change terms in "formerly X" phrases)
+- Grammar correct after name changes (a/an usage)
+- Portal capitalization (lowercase: "Azure portal", "Foundry portal")
 
-Evaluate:
-- Does the article deliver on its stated intent?
-- Are prerequisites clear?
-- Do next steps connect to natural follow-on tasks?
+Scoring: 1-2=major terminology errors, 3-4=inconsistent usage, 5-6=mostly correct, 7=exemplary compliance
 
-If no customer intent is specified, set score to null.
+### 8. JTBD Alignment (jtbd_alignment)
+*Does the article support its stated customer intent?*
+
+Customer intent: "{article.metadata.customer_intent or 'Not specified'}"
+
+{"If no customer intent specified, set score to null." if not article.metadata.customer_intent else '''Check:
+- Article delivers on stated intent
+- Prerequisites enable the customer to succeed
+- Next steps connect to natural follow-on tasks'''}
 
 ## Output Format
 
-Provide your evaluation as a JSON object with this structure:
+Provide your evaluation as a JSON object:
 
 ```json
 {{
@@ -173,7 +222,7 @@ Provide your evaluation as a JSON object with this structure:
       "confidence": <0.0-1.0>,
       "rationale": "<1-2 sentence justification>"
     }},
-    // ... repeat for all 7 dimensions
+    // ... repeat for all 8 dimensions
   ],
   "issues": [
     {{
@@ -181,7 +230,7 @@ Provide your evaluation as a JSON object with this structure:
       "severity": "<critical|high|medium|low>",
       "title": "<short issue title>",
       "description": "<detailed description>",
-      "location": "<line number, section name, or 'general'>",
+      "location": "<line number, section, or 'general'>",
       "suggestion": "<how to fix>"
     }}
   ],
@@ -189,14 +238,13 @@ Provide your evaluation as a JSON object with this structure:
 }}
 ```
 
-Be thorough but concise. Focus on actionable issues."""
+Focus on high-impact, actionable issues. Prioritize: move > modify > add."""
 
 
 def build_quick_scan_prompt(article: Article) -> str:
     """Build a lightweight prompt for quick structural scanning.
 
-    This is used in tiered mode for the initial pass before deciding
-    whether to do a full evaluation.
+    Used in tiered mode for initial triage before full evaluation.
 
     Args:
         article: Article object to scan.
@@ -204,12 +252,16 @@ def build_quick_scan_prompt(article: Article) -> str:
     Returns:
         Formatted quick scan prompt.
     """
-    # Only include first part of content for quick scan
     content_preview = article.content_without_frontmatter[:5000]
     if len(article.content_without_frontmatter) > 5000:
         content_preview += "\n\n[Content truncated for quick scan...]"
 
-    return f"""Perform a quick structural assessment of this documentation article.
+    is_concept = ContentPattern.from_ms_topic(article.metadata.ms_topic) in (
+        ContentPattern.CONCEPT,
+        ContentPattern.OVERVIEW,
+    )
+
+    return f"""Quick structural assessment of this documentation article.
 
 ## Article Information
 
@@ -226,15 +278,14 @@ def build_quick_scan_prompt(article: Article) -> str:
 
 {content_preview}
 
-## Quick Assessment
+## Quick Checks
 
-Evaluate these quick-check items:
-
-1. **Pattern Match**: Does ms.topic match the content style?
-2. **Structure Valid**: Are headings properly nested (H1 → H2 → H3)?
-3. **Has Code**: Does a developer article have code examples?
-4. **Recent**: Is ms.date within the last 12 months?
-5. **Prerequisites**: Does procedural content have a prerequisites section?
+1. **Pattern Match**: Does ms.topic match content style? (how-to=procedural, concept=explanatory)
+2. **Structure Valid**: Headings properly nested? No skipped levels?
+3. **Has Code**: {"N/A for concept" if is_concept else "Does procedural content have code examples?"}
+4. **Recent**: Is ms.date within 12 months?
+5. **Prerequisites**: Does procedural content have prerequisites section first?
+6. **Branding**: Any obvious terminology issues? (Azure AI Foundry->Microsoft Foundry)
 
 ## Output Format
 
@@ -242,9 +293,7 @@ Evaluate these quick-check items:
 {{
   "quick_score": <1-7 overall estimate>,
   "needs_deep_evaluation": <true if score < 4 or critical issues>,
-  "flags": [
-    "<list of specific concerns that warrant deep evaluation>"
-  ],
+  "flags": ["<specific concerns>"],
   "pattern_match": <true|false>,
   "structure_valid": <true|false>,
   "has_code": <true|false>,
@@ -253,4 +302,4 @@ Evaluate these quick-check items:
 }}
 ```
 
-Be brief. This is a triage assessment."""
+Brief triage only."""
