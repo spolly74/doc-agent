@@ -107,30 +107,25 @@ class CSVWriter:
 
         Args:
             result: Evaluation result to convert.
-            article_metadata: Optional metadata for the article.
+            article_metadata: Optional metadata for the article (legacy, not used).
 
         Returns:
             Dictionary representing a CSV row.
         """
-        # Get metadata if available
-        metadata = {}
-        if article_metadata and result.article_path in article_metadata:
-            metadata = article_metadata[result.article_path]
-
         # Extract dimension scores
         scores = {}
         for dim in Dimension:
             score = result.get_dimension_score(dim)
             scores[dim.value] = score if score is not None else ""
 
-        # Build row
+        # Build row - use metadata directly from result
         row = {
             "article_path": result.article_path,
             "title": result.article_title,
-            "ms_author": metadata.get("ms_author", ""),
-            "ms_subservice": metadata.get("ms_subservice", ""),
-            "ms_topic": metadata.get("ms_topic", ""),
-            "ms_date": metadata.get("ms_date", ""),
+            "ms_author": result.ms_author or "",
+            "ms_subservice": result.ms_subservice or "",
+            "ms_topic": result.ms_topic or "",
+            "ms_date": result.ms_date or "",
             "pattern_compliance": scores.get("pattern_compliance", ""),
             "dev_focus": scores.get("dev_focus", ""),
             "code_quality": scores.get("code_quality", ""),
@@ -142,7 +137,7 @@ class CSVWriter:
             "priority_rank": result.priority_rank,
             "top_issues": result.top_issues_summary,
             "issue_count": len(result.issues),
-            "has_code_samples": metadata.get("has_code", False),
+            "has_code_samples": result.has_code_samples,
             "sample_quality_issues": "",  # Populated in samples mode
             "coverage_gaps": "",  # Populated in JTBD mode
         }

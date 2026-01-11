@@ -92,6 +92,11 @@ def parse_evaluation_response(
     article_path: str,
     article_title: str,
     model_used: str,
+    ms_author: Optional[str] = None,
+    ms_date: Optional[str] = None,
+    ms_topic: Optional[str] = None,
+    ms_subservice: Optional[str] = None,
+    has_code_samples: bool = False,
 ) -> EvaluationResult:
     """Parse an LLM evaluation response into an EvaluationResult.
 
@@ -100,6 +105,11 @@ def parse_evaluation_response(
         article_path: Path of the evaluated article.
         article_title: Title of the evaluated article.
         model_used: LLM model that generated the response.
+        ms_author: Article author from frontmatter.
+        ms_date: Article date from frontmatter.
+        ms_topic: Article topic type from frontmatter.
+        ms_subservice: Article subservice from frontmatter.
+        has_code_samples: Whether the article has code samples.
 
     Returns:
         Parsed EvaluationResult.
@@ -172,6 +182,11 @@ def parse_evaluation_response(
     return EvaluationResult(
         article_path=article_path,
         article_title=article_title,
+        ms_author=ms_author,
+        ms_date=ms_date,
+        ms_topic=ms_topic,
+        ms_subservice=ms_subservice,
+        has_code_samples=has_code_samples,
         dimension_scores=dimension_scores,
         issues=issues,
         llm_model_used=model_used,
@@ -210,6 +225,11 @@ def quick_scan_to_evaluation_result(
     article_path: str,
     article_title: str,
     model_used: str,
+    ms_author: Optional[str] = None,
+    ms_date: Optional[str] = None,
+    ms_topic: Optional[str] = None,
+    ms_subservice: Optional[str] = None,
+    has_code_samples: bool = False,
 ) -> EvaluationResult:
     """Convert a quick scan response to a minimal EvaluationResult.
 
@@ -218,6 +238,11 @@ def quick_scan_to_evaluation_result(
         article_path: Path of the evaluated article.
         article_title: Title of the evaluated article.
         model_used: LLM model that generated the response.
+        ms_author: Article author from frontmatter.
+        ms_date: Article date from frontmatter.
+        ms_topic: Article topic type from frontmatter.
+        ms_subservice: Article subservice from frontmatter.
+        has_code_samples: Whether the article has code samples.
 
     Returns:
         Minimal EvaluationResult with quick scan data.
@@ -264,6 +289,11 @@ def quick_scan_to_evaluation_result(
     return EvaluationResult(
         article_path=article_path,
         article_title=article_title,
+        ms_author=ms_author,
+        ms_date=ms_date,
+        ms_topic=ms_topic,
+        ms_subservice=ms_subservice,
+        has_code_samples=has_code_samples,
         dimension_scores=dimension_scores,
         issues=issues,
         is_quick_scan=True,

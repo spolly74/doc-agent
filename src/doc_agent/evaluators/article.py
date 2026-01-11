@@ -108,6 +108,11 @@ class ArticleEvaluator(BaseEvaluator[EvaluationResult]):
             article_path=article.relative_path,
             article_title=article.metadata.title,
             model_used=self._llm.model_name,
+            ms_author=article.metadata.ms_author,
+            ms_date=article.metadata.ms_date.strftime("%Y-%m-%d") if article.metadata.ms_date else None,
+            ms_topic=article.metadata.ms_topic,
+            ms_subservice=article.metadata.ms_subservice,
+            has_code_samples=article.has_code,
         )
 
         # Add token usage
@@ -150,6 +155,11 @@ class ArticleEvaluator(BaseEvaluator[EvaluationResult]):
             article_path=article.relative_path,
             article_title=article.metadata.title,
             model_used=self._llm.model_name,
+            ms_author=article.metadata.ms_author,
+            ms_date=article.metadata.ms_date.strftime("%Y-%m-%d") if article.metadata.ms_date else None,
+            ms_topic=article.metadata.ms_topic,
+            ms_subservice=article.metadata.ms_subservice,
+            has_code_samples=article.has_code,
         )
 
         result.token_usage = {

@@ -76,7 +76,7 @@ class EvaluationConfig(BaseModel):
     max_age_months: int = Field(default=12, ge=1, le=60)
     include_patterns: list[str] = Field(default=["**/*.md"])
     exclude_patterns: list[str] = Field(
-        default=["**/includes/**", "**/snippets/**", "**/media/**"]
+        default=["**/includes/**", "**/snippets/**", "**/media/**", "**/*.yml", "**/*.yaml"]
     )
 
 

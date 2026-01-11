@@ -105,8 +105,10 @@ class BaseEvaluator(ABC, Generic[T]):
                     return index, result
                 except Exception as e:
                     logger.error(
-                        f"Evaluation failed for {article.relative_path}: {e}"
+                        f"Evaluation failed for {article.relative_path}: {type(e).__name__}: {e}"
                     )
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Full exception for {article.relative_path}", exc_info=True)
                     return index, e
 
         # Create tasks for all articles

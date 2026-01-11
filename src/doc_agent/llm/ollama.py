@@ -6,6 +6,13 @@ from typing import AsyncIterator, Optional
 
 import httpx
 from pydantic import BaseModel, ValidationError
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+)
 
 from doc_agent.llm.protocol import LLMMessage, LLMResponse, LLMUsage
 
@@ -13,6 +20,9 @@ logger = logging.getLogger("doc_agent.llm.ollama")
 
 # Default Ollama API endpoint
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
+
+# Default timeout: 10 minutes for local inference on large docs
+DEFAULT_OLLAMA_TIMEOUT = 600.0
 
 
 class OllamaProvider:
@@ -29,14 +39,14 @@ class OllamaProvider:
         self,
         model: str = "llama3.2",
         base_url: str = DEFAULT_OLLAMA_URL,
-        timeout: float = 300.0,  # 5 minutes for large docs
+        timeout: float = DEFAULT_OLLAMA_TIMEOUT,
     ):
         """Initialize the Ollama provider.
 
         Args:
             model: Ollama model name (e.g., "llama3.2", "mistral", "qwen2.5").
             base_url: Ollama API base URL.
-            timeout: Request timeout in seconds.
+            timeout: Request timeout in seconds (default 10 minutes).
         """
         self._model = model
         self._base_url = base_url.rstrip("/")
@@ -66,6 +76,27 @@ class OllamaProvider:
         Returns:
             LLMResponse with the completion.
         """
+        return await self._complete_with_retry(
+            messages=messages,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=10, max=60),
+        retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+    )
+    async def _complete_with_retry(
+        self,
+        messages: list[LLMMessage],
+        system: Optional[str] = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.0,
+    ) -> LLMResponse:
+        """Send messages with retry logic for timeouts."""
         # Build Ollama messages format
         ollama_messages = []
 
@@ -139,17 +170,36 @@ class OllamaProvider:
         Returns:
             Parsed Pydantic model instance.
         """
-        # Build schema instruction
+        # Build a simpler schema instruction with example format
+        # Smaller models work better with examples than formal JSON schemas
         schema = response_model.model_json_schema()
-        schema_instruction = f"""
-You must respond with valid JSON that matches this schema:
+        properties = schema.get("properties", {})
+        required = schema.get("required", [])
 
-```json
-{json.dumps(schema, indent=2)}
-```
+        # Build example JSON structure
+        example_obj = {}
+        for field_name, field_info in properties.items():
+            field_type = field_info.get("type", "string")
+            if field_type == "integer":
+                example_obj[field_name] = 0
+            elif field_type == "number":
+                example_obj[field_name] = 0.0
+            elif field_type == "boolean":
+                example_obj[field_name] = True
+            elif field_type == "array":
+                example_obj[field_name] = []
+            elif field_type == "object":
+                example_obj[field_name] = {}
+            else:
+                example_obj[field_name] = "..."
 
-Respond ONLY with the JSON object. Do not include any other text, markdown formatting, or code blocks.
-"""
+        schema_instruction = f"""IMPORTANT: You must respond with ONLY a valid JSON object in this exact format:
+
+{json.dumps(example_obj, indent=2)}
+
+Required fields: {", ".join(required) if required else "all fields shown above"}
+
+Do NOT include any explanation, markdown, or code blocks. Output ONLY the JSON object."""
 
         # Combine with existing system prompt
         full_system = schema_instruction
@@ -167,13 +217,11 @@ Respond ONLY with the JSON object. Do not include any other text, markdown forma
         # Parse JSON from response
         content = response.content.strip()
 
-        # Handle potential markdown code block wrapping
-        if content.startswith("```"):
-            lines = content.split("\n")
-            content = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
+        # Try to extract JSON from various formats
+        json_content = self._extract_json(content)
 
         try:
-            data = json.loads(content)
+            data = json.loads(json_content)
             return response_model.model_validate(data)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {content[:500]}")
@@ -188,6 +236,42 @@ Respond ONLY with the JSON object. Do not include any other text, markdown forma
                     }
                 ],
             )
+
+    def _extract_json(self, content: str) -> str:
+        """Extract JSON from model response, handling various formats.
+
+        Args:
+            content: Raw response content from the model.
+
+        Returns:
+            Extracted JSON string.
+        """
+        import re
+
+        # Try direct JSON first
+        content = content.strip()
+        if content.startswith("{") and content.endswith("}"):
+            return content
+
+        # Handle markdown code blocks (```json ... ```)
+        code_block_match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", content, re.DOTALL)
+        if code_block_match:
+            return code_block_match.group(1).strip()
+
+        # Find JSON object anywhere in the response
+        # Match from first { to last } that creates valid JSON structure
+        brace_match = re.search(r"\{.*\}", content, re.DOTALL)
+        if brace_match:
+            candidate = brace_match.group(0)
+            # Validate it's actually JSON by trying to parse
+            try:
+                json.loads(candidate)
+                return candidate
+            except json.JSONDecodeError:
+                pass
+
+        # Fallback: return original content
+        return content
 
     async def stream(
         self,

@@ -73,11 +73,13 @@ Evaluate:
 - Prerequisites completeness
 - Expected output documentation
 
+**Note**: For concept, overview, or concept-article types (ms.topic), code samples are not expected. Evaluate based on clarity, actionable insights, and links to related how-to/tutorial content instead.
+
 Score guide:
-- 1-2: No code or code buried after extensive prose
-- 3-4: Code present but delayed or lacking context
-- 5-6: Code-first approach with good context
-- 7: Exemplary - hello world within first scroll
+- 1-2: No code or code buried after extensive prose (or for concepts: confusing, no actionable takeaways)
+- 3-4: Code present but delayed or lacking context (or for concepts: limited practical guidance)
+- 5-6: Code-first approach with good context (or for concepts: clear explanations with good links)
+- 7: Exemplary - hello world within first scroll (or for concepts: excellent clarity and next steps)
 
 ### Dimension 3: Code Quality (code_quality)
 *How well-written and maintainable are the code samples?*
@@ -96,7 +98,7 @@ Score guide:
 - 5-6: Good quality, production-ready patterns
 - 7: Exemplary reference implementation
 
-If no code is present, set score to null.
+If no code is present, set score to null. This is expected for concept, overview, or concept-article types.
 
 ### Dimension 4: Code Completeness (code_completeness)
 *Does the article have all necessary code samples?*
@@ -112,6 +114,8 @@ Score guide:
 - 3-4: Adequate but notable gaps
 - 5-6: Good coverage
 - 7: Complete - every operation demonstrated
+
+**Note**: For concept, overview, or concept-article types, evaluate whether the article appropriately links to related how-to content with code examples rather than expecting inline code.
 
 ### Dimension 5: Structure (structure)
 *How well-organized is the article for developer consumption?*

@@ -58,6 +58,13 @@ class EvaluationResult(BaseModel):
     article_path: str
     article_title: str
 
+    # Article metadata (from frontmatter)
+    ms_author: Optional[str] = None
+    ms_date: Optional[str] = None  # Stored as string for serialization
+    ms_topic: Optional[str] = None
+    ms_subservice: Optional[str] = None
+    has_code_samples: bool = False
+
     # Timing
     evaluated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
