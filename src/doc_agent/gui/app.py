@@ -460,17 +460,33 @@ def render_job_history():
             JobStatus.CANCELLED: "⚪",
         }.get(job.status, "⚪")
 
+        # Check if this is the currently selected job
+        is_current = st.session_state.current_job_id == job.job_id
+
         col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
         with col1:
-            st.text(f"{status_emoji} {job.job_id}")
+            # Highlight current job
+            if is_current:
+                st.markdown(f"**{status_emoji} {job.job_id}** ◀")
+            else:
+                st.text(f"{status_emoji} {job.job_id}")
         with col2:
             st.text(job.status.value)
         with col3:
             st.text(job.created_at.strftime("%H:%M:%S"))
         with col4:
-            if job.status == JobStatus.COMPLETE and st.button("View", key=f"view_{job.job_id}"):
-                st.session_state.current_job_id = job.job_id
-                st.rerun()
+            # Show button for all jobs (different label based on status)
+            if not is_current:
+                if job.status in (JobStatus.PENDING, JobStatus.RUNNING):
+                    button_label = "Monitor"
+                elif job.status == JobStatus.COMPLETE:
+                    button_label = "View"
+                else:
+                    button_label = "Details"
+
+                if st.button(button_label, key=f"view_{job.job_id}"):
+                    st.session_state.current_job_id = job.job_id
+                    st.rerun()
 
 
 def count_markdown_files(target_path: Path) -> int:
