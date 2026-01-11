@@ -53,6 +53,70 @@ def init_session_state():
         st.session_state.progress = 0
     if "status_message" not in st.session_state:
         st.session_state.status_message = ""
+    if "target_browse_path" not in st.session_state:
+        st.session_state.target_browse_path = str(Path.home())
+    if "output_browse_path" not in st.session_state:
+        st.session_state.output_browse_path = str(Path.home())
+
+
+def render_directory_browser(key: str, label: str) -> str | None:
+    """Render a directory browser and return the selected path.
+
+    Args:
+        key: Unique key for session state (e.g., 'target' or 'output')
+        label: Label to display in the expander
+
+    Returns:
+        Selected directory path, or None if nothing selected
+    """
+    browse_key = f"{key}_browse_path"
+    current_path = Path(st.session_state.get(browse_key, str(Path.home())))
+
+    with st.expander(f"📁 Browse for {label}"):
+        # Show current location
+        st.caption(f"Current: {current_path}")
+
+        # Navigation buttons
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            if st.button("🏠 Home", key=f"{key}_home"):
+                st.session_state[browse_key] = str(Path.home())
+                st.rerun()
+        with col2:
+            if st.button("⬆️ Up", key=f"{key}_up"):
+                parent = current_path.parent
+                if parent != current_path:
+                    st.session_state[browse_key] = str(parent)
+                    st.rerun()
+        with col3:
+            if st.button(f"✅ Select This Folder", key=f"{key}_select", type="primary"):
+                return str(current_path)
+
+        # List directories
+        try:
+            dirs = sorted([
+                d for d in current_path.iterdir()
+                if d.is_dir() and not d.name.startswith(".")
+            ], key=lambda x: x.name.lower())
+
+            if not dirs:
+                st.info("No subdirectories found")
+            else:
+                # Show as clickable buttons in a scrollable container
+                for d in dirs[:20]:  # Limit to 20 to avoid overwhelming
+                    if st.button(f"📂 {d.name}", key=f"{key}_{d.name}", use_container_width=True):
+                        st.session_state[browse_key] = str(d)
+                        st.rerun()
+
+                if len(dirs) > 20:
+                    st.caption(f"... and {len(dirs) - 20} more folders")
+
+        except PermissionError:
+            st.error("Permission denied to access this directory")
+        except Exception as e:
+            st.error(f"Error listing directory: {e}")
+
+    return None
 
 
 def render_sidebar():
@@ -64,18 +128,42 @@ def render_sidebar():
 
         # Target directory
         st.subheader("Target")
+
+        # Initialize target path in session state if not set
+        if "target_path" not in st.session_state:
+            st.session_state.target_path = "./docs"
+
         target_path = st.text_input(
             "Documentation Directory",
-            value="./docs",
+            value=st.session_state.target_path,
             help="Path to the documentation directory to evaluate",
+            key="target_input",
         )
+        st.session_state.target_path = target_path
+
+        # Directory browser for target
+        selected_target = render_directory_browser("target", "Target Directory")
+        if selected_target:
+            st.session_state.target_path = selected_target
+            st.rerun()
 
         # Output directory
+        if "output_path" not in st.session_state:
+            st.session_state.output_path = "./eval-output"
+
         output_path = st.text_input(
             "Output Directory",
-            value="./eval-output",
+            value=st.session_state.output_path,
             help="Path to save evaluation results",
+            key="output_input",
         )
+        st.session_state.output_path = output_path
+
+        # Directory browser for output
+        selected_output = render_directory_browser("output", "Output Directory")
+        if selected_output:
+            st.session_state.output_path = selected_output
+            st.rerun()
 
         st.divider()
 
@@ -143,8 +231,8 @@ def render_sidebar():
         ):
             return {
                 "run": True,
-                "target": target_path,
-                "output": output_path,
+                "target": st.session_state.target_path,
+                "output": st.session_state.output_path,
                 "provider": provider,
                 "model": model,
                 "concurrency": concurrency,
