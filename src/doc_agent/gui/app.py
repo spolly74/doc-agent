@@ -23,8 +23,7 @@ st.set_page_config(
 from doc_agent import __version__
 from doc_agent.jobs.manager import JobManager
 from doc_agent.jobs.models import JobConfig, JobStatus
-from doc_agent.jobs.worker import is_worker_running, PID_FILE
-from doc_agent.models.enums import Dimension
+from doc_agent.jobs.worker import is_worker_running, LOG_FILE
 
 
 def load_dotenv() -> None:
@@ -185,6 +184,20 @@ def render_sidebar():
             st.caption("🟢 Worker running")
         else:
             st.caption("🔴 Worker stopped")
+
+        # Show log file location
+        with st.expander("📋 Worker Logs"):
+            st.caption(f"Log file: `{LOG_FILE}`")
+            if LOG_FILE.exists():
+                # Show last 20 lines of log
+                try:
+                    lines = LOG_FILE.read_text().strip().split("\n")
+                    recent_lines = lines[-20:] if len(lines) > 20 else lines
+                    st.code("\n".join(recent_lines), language=None)
+                except Exception as e:
+                    st.error(f"Could not read log: {e}")
+            else:
+                st.info("No log file yet. Start an evaluation to create logs.")
 
         st.divider()
 

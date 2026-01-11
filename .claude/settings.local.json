@@ -14,7 +14,9 @@
       "Bash(python:*)",
       "Bash(doc-agent-gui:*)",
       "Bash(doc-agent-worker:*)",
-      "Bash(pytest:*)"
+      "Bash(pytest:*)",
+      "Bash(timeout 30 doc-agent-worker:*)",
+      "Bash(curl:*)"
     ]
   }
 }
