@@ -80,6 +80,7 @@ dev = [
 [project.scripts]
 doc-agent = "doc_agent.cli.main:app"
 doc-agent-gui = "doc_agent.gui.launcher:main"
+doc-agent-worker = "doc_agent.jobs.worker:main"
 
 [project.urls]
 Homepage = "https://github.com/spolly74/doc-agent"

@@ -12,7 +12,9 @@
       "Bash(pip install:*)",
       "Bash(doc-agent:*)",
       "Bash(python:*)",
-      "Bash(doc-agent-gui:*)"
+      "Bash(doc-agent-gui:*)",
+      "Bash(doc-agent-worker:*)",
+      "Bash(pytest:*)"
     ]
   }
 }
