@@ -11,7 +11,8 @@
       "Bash(find:*)",
       "Bash(pip install:*)",
       "Bash(doc-agent:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(doc-agent-gui:*)"
     ]
   }
 }

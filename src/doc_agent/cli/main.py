@@ -41,7 +41,40 @@ _load_dotenv()
 # Create the main Typer app
 app = typer.Typer(
     name="doc-agent",
-    help="Agentic content evaluation system for technical documentation.",
+    help="""Agentic content evaluation system for technical documentation.
+
+Evaluates articles against an 8-dimension rubric:
+  [cyan]pattern_compliance[/]  - Follows correct article pattern (how-to, quickstart, etc.)
+  [cyan]dev_focus[/]           - Minimizes time-to-first-success for developers
+  [cyan]code_quality[/]        - Well-written, production-ready code samples
+  [cyan]code_completeness[/]   - All necessary code samples present
+  [cyan]structure[/]           - Well-organized, scannable content
+  [cyan]accuracy[/]            - Technically correct and current
+  [cyan]branding_compliance[/] - Correct Microsoft terminology
+  [cyan]jtbd_alignment[/]      - Supports stated customer intent
+
+[bold]Examples:[/bold]
+
+  [dim]# Full evaluation with Claude (default)[/dim]
+  doc-agent full --target ./docs --output ./results
+
+  [dim]# Use local Ollama for evaluation[/dim]
+  doc-agent full --target ./docs --provider ollama --model llama3.2
+
+  [dim]# Tiered evaluation (quick scan, then deep eval where needed)[/dim]
+  doc-agent tiered --target ./docs --threshold 4.0
+
+  [dim]# JTBD coverage analysis[/dim]
+  doc-agent jtbd --jtbd-file ./jtbd.csv --target ./docs
+
+  [dim]# Code sample validation[/dim]
+  doc-agent samples --articles-repo ./docs --samples-repo ./samples
+
+[bold]Configuration:[/bold]
+
+  Create [cyan]doc-agent.config.json[/cyan] in your project root, or use CLI flags.
+  Set [cyan]ANTHROPIC_API_KEY[/cyan] env var for Claude, or use --provider ollama for local LLM.
+""",
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
@@ -70,10 +103,7 @@ def main(
         ),
     ] = None,
 ) -> None:
-    """Doc Agent.
-
-    Evaluate technical documentation against a developer-focused rubric.
-    """
+    """Evaluate technical documentation against a developer-focused rubric."""
     pass
 
 
@@ -198,12 +228,25 @@ def full(
 ) -> None:
     """Run full evaluation on all articles in target directory.
 
-    Evaluates every article against the complete 7-dimension rubric,
-    checks code sample quality, and produces comprehensive reports.
+    Evaluates every article against the complete 8-dimension rubric
+    and produces scores.csv + report.md.
 
-    Examples:
-        doc-agent full --target ./docs --output ./results
-        doc-agent full --target ./docs --provider ollama --model llama3.2
+    [bold]Examples:[/bold]
+
+      [dim]# Basic evaluation with Claude[/dim]
+      doc-agent full --target ./docs
+
+      [dim]# Specify output directory[/dim]
+      doc-agent full --target ./docs --output ./my-results
+
+      [dim]# Use Ollama for local evaluation[/dim]
+      doc-agent full --target ./docs --provider ollama --model llama3.2
+
+      [dim]# Force re-evaluation (ignore cache)[/dim]
+      doc-agent full --target ./docs --force
+
+      [dim]# Increase concurrency for faster evaluation[/dim]
+      doc-agent full --target ./docs --concurrency 5
     """
     cfg = load_config(
         config_path=config,
@@ -309,10 +352,21 @@ def tiered(
 
     First performs a quick structural scan of all articles, then runs
     full evaluation only on articles that score below the threshold
-    or have critical issues.
+    or have critical issues. More efficient for large doc sets.
 
-    Example:
-        doc-agent tiered --target ./docs --threshold 3.5
+    [bold]Examples:[/bold]
+
+      [dim]# Default threshold (4.0)[/dim]
+      doc-agent tiered --target ./docs
+
+      [dim]# Stricter threshold (more articles get deep eval)[/dim]
+      doc-agent tiered --target ./docs --threshold 5.0
+
+      [dim]# Lenient threshold (fewer deep evaluations)[/dim]
+      doc-agent tiered --target ./docs --threshold 3.0
+
+      [dim]# Use Ollama with tiered evaluation[/dim]
+      doc-agent tiered --target ./docs --provider ollama --model qwen2.5
     """
     cfg = load_config(
         config_path=config,
@@ -407,11 +461,24 @@ def jtbd(
 ) -> None:
     """Run JTBD-scoped evaluation for a specific job-to-be-done.
 
-    Loads the specified JTBD, maps existing articles to its steps,
-    evaluates coverage, and identifies gaps.
+    Loads the JTBD data, maps existing articles to job steps,
+    evaluates coverage, and identifies content gaps.
 
-    Example:
-        foundry-eval jtbd --jtbd-file ./jtbd.csv --jtbd-id jtbd-001
+    [bold]Examples:[/bold]
+
+      [dim]# Analyze all JTBDs in a file[/dim]
+      doc-agent jtbd --jtbd-file ./jtbd.csv --target ./docs
+
+      [dim]# Analyze a specific JTBD[/dim]
+      doc-agent jtbd --jtbd-file ./jtbd.json --jtbd-id deploy-model
+
+      [dim]# JSON format JTBD file[/dim]
+      doc-agent jtbd --jtbd-file ./jobs-to-be-done.json --target ./docs
+
+    [bold]JTBD File Formats:[/bold]
+
+      CSV: id,title,description columns (Golden Path format)
+      JSON: Array of {id, title, steps: [{id, description}]} objects
     """
     from doc_agent.context.jtbd_loader import JTBDLoader
     from doc_agent.context.toc_parser import TOCParser
@@ -553,11 +620,23 @@ def samples(
     """Validate code samples and check references.
 
     Indexes the samples repository, validates sample quality,
-    checks for orphaned samples, and identifies articles that
-    need samples but don't have them.
+    checks for orphaned samples, and identifies broken references.
 
-    Example:
-        foundry-eval samples --articles-repo ./docs --samples-repo ./samples
+    [bold]Examples:[/bold]
+
+      [dim]# Basic sample validation (no LLM)[/dim]
+      doc-agent samples --articles-repo ./docs --samples-repo ./samples
+
+      [dim]# With LLM validation for code quality[/dim]
+      doc-agent samples --articles-repo ./docs --samples-repo ./samples --validate
+
+      [dim]# Verbose output to see details[/dim]
+      doc-agent samples --articles-repo ./docs --samples-repo ./samples -v
+
+    [bold]Output:[/bold]
+
+      Produces samples-report.json with orphaned samples, broken references,
+      and language breakdown.
     """
     from doc_agent.context.samples_index import SamplesIndex
     from doc_agent.context.toc_parser import TOCParser
