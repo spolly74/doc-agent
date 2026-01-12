@@ -323,7 +323,7 @@ class TOCParser:
             toc_dir: Directory containing the TOC file.
 
         Returns:
-            Resolved Path or None if href is external/invalid.
+            Resolved Path or None if href is external/invalid/non-article.
         """
         # Skip external URLs
         if href.startswith(("http://", "https://", "mailto:")):
@@ -336,6 +336,11 @@ class TOCParser:
         # Remove any anchor from the href
         href = href.split("#")[0]
         if not href:
+            return None
+
+        # Skip non-markdown files (TOC files, YAML configs, etc.)
+        href_lower = href.lower()
+        if href_lower.endswith((".yml", ".yaml", ".json", ".xml")):
             return None
 
         # Resolve relative path
